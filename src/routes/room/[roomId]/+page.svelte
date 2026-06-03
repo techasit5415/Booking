@@ -8,7 +8,7 @@
     import UpcomingBookingsList from '$lib/components/UpcomingBookingsList.svelte';
     import QrBookingCard from '$lib/components/QrBookingCard.svelte';
     import { page } from '$app/state';
-    const DEBUG = false;
+    
 
     type BookingItem = {
         id: string;
@@ -308,7 +308,7 @@
 
                 // 2. ดึงตารางจองทั้งหมดที่ผูกกับห้องนี้
                 const records = await pb.collection("bookings").getFullList({
-                    filter: `field = "${currentRoomId}"`,
+                    filter: `field = "(${currentRoomId})", { roomId: currentRoomId }`,
                     sort: "start_time",
                     expand: "field",
                 });
