@@ -2,7 +2,7 @@
     let { upcomingBookings = [], roomLocation = '' } = $props();
 </script>
 
-<article class="flex flex-col rounded-[2vw] border border-slate-800/80 bg-black p-[2.5vw] shadow-xl shadow-black/20">
+<article class="flex flex-col rounded-[2vw] border border-slate-800/80 bg-black p-[2vw] shadow-xl shadow-black/20">
     <h3 class="mb-[1vw] text-[1.2vw] font-semibold tracking-[0.16em] text-slate-400 uppercase">
         คิวถัดไปวันนี้
     </h3>

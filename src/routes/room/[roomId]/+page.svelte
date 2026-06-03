@@ -3,7 +3,11 @@
     import PocketBase from "pocketbase";
     import QRCode from "qrcode";
     import { env } from "$env/dynamic/public";
-
+    import RoomHeader from '$lib/components/RoomHeader.svelte';
+    import ActiveBookingCard from '$lib/components/ActiveBookingCard.svelte';
+    import UpcomingBookingsList from '$lib/components/UpcomingBookingsList.svelte';
+    import QrBookingCard from '$lib/components/QrBookingCard.svelte';
+    import { page } from '$app/state';
     const DEBUG = false;
 
     type BookingItem = {
@@ -35,8 +39,8 @@
     type BookingViewState = "active" | "idle";
 
     const pocketbaseUrl = env.PUBLIC_POCKETBASE_URL || "";
-    const currentRoomId = env.PUBLIC_ROOM_ID701 || "";
-
+    // const currentRoomId = env.PUBLIC_ROOM_ID701 || "";
+    const currentRoomId = page.params.roomId;
     const defaultRoomName = "CONFERENCE ROOM 01";
     const defaultRoomLocation = "อาคารอเนกประสงค์ ชั้น 3";
     const defaultBookingUrl = "https://example.com/book-room";
@@ -128,7 +132,7 @@
         // 4. คำนวณ Progress Bar ด้วยเวลา Epoch มิลลิวินาทีโดยตรงจากโมเดลข้อมูล
         if (currentBooking.id === "empty") {
             progressPercent = 0;
-            progressNote = "ห้องกำลังว่าง";
+            progressNote = "ห้องว่าง";
         } else {
             const start = currentBooking.startEpoch ?? now;
             const end = currentBooking.endEpoch ?? now;
@@ -385,165 +389,23 @@
     />
 </svelte:head>
 
-<div
-    class="min-h-screen w-screen overflow-hidden bg-black p-1 text-slate-100 md:p-2 font-['Prompt',sans-serif]"
->
-    <div class="flex min-h-screen flex-col gap-4 md:gap-6">
-        <header
-            class="flex flex-col gap-4 border-b border-slate-700/40 pb-1 md:flex-row md:items-center md:justify-between md:pb-2"
-        >
-            <div class="flex items-center gap-4">
-                <div
-                    class="rounded-2xl bg-indigo-600 px-[1.5vw] py-[1vw] text-[1.2vw] font-extrabold tracking-[0.16em] text-white shadow-lg shadow-indigo-950/30"
-                >
-                    ROOM
-                </div>
-                <div>
-                    <h1
-                        class="text-[4.5vw] font-bold text-white md:text-[3.5vw]"
-                    >
-                        {roomName}
-                    </h1>
-                    <p
-                        class="mt-[0.5vw] text-[2vw] text-slate-400 md:text-[2vw]"
-                    >
-                        ห้อง: {roomLocation}
-                    </p>
-                </div>
-            </div>
+<div class="min-h-screen w-screen overflow-hidden bg-black p-[1vw] text-slate-100 font-['Prompt',sans-serif]">
+    <div class="flex flex-col gap-[1vw]">
+        
+        <!-- 1. ส่วนหัวเว็บ -->
+        <RoomHeader {roomName} {roomLocation} {clockText} {dateText} {statusLabel} />
 
-            <div class="text-left md:text-right pr-[1.5vw] mt-2">
-                <div
-                    class="text-[5vw] font-extrabold leading-none text-indigo-300 md:text-[5vw]"
-                >
-                    {clockText}
-                </div>
-                <div
-                    class="mt-[0.5vw] text-[1.2vw] text-slate-400 md:text-[1.2vw]"
-                >
-                    {dateText}
-                </div>
-                <div
-                    class="mt-[1vw] inline-flex rounded-full border border-indigo-400/20 bg-slate-950/80 px-3 py-1 text-[1vw] font-bold tracking-[0.14em] text-indigo-300"
-                >
-                    {statusLabel}
-                </div>
-            </div>
-        </header>
-
-        <main class="grid flex-1 min-h-1 gap-[1vw] grid-cols-[1fr_0.5fr] ">
+        <!-- 2. บล็อกกระดาน Grid แบ่งซ้ายขวาทุกขนาดจอ -->
+        <main class="grid flex-1 min-h-0 gap-[1vw] grid-cols-[1.3fr_0.9fr]">
             
-            <div class="flex flex-col gap-[1vw] min-h-0 max-h-[42vw] ">
-                
-                <article class={`relative flex min-h-[20vw] flex-col justify-between overflow-hidden rounded-[2vw] border p-[2.5vw] shadow-2xl shadow-black/40 ${bookingViewState === "idle" ? "border-emerald-500/20 bg-gradient-to-br from-emerald-950/40 via-black to-black" : "border-red-500/15 bg-gradient-to-br from-red-950/40 via-black to-black"}`}>
-                    <div class={`absolute inset-y-0 left-0 w-[0.8vw] bg-gradient-to-b ${bookingViewState === "idle" ? "from-emerald-400 via-lime-500 to-black" : "from-red-500 via-orange-500 to-black"}`}></div>
-                    
-                    <div>
-                        <div class={`inline-flex items-center gap-[0.5vw] rounded-full border px-[1.2vw] py-[0.4vw] text-[1.1vw] font-bold tracking-[0.12em] ${bookingViewState === "idle" ? "border-emerald-400/20 bg-emerald-500/15 text-emerald-300" : "border-red-400/20 bg-red-500/15 text-red-300"}`}>
-                            <span class={`h-[0.6vw] w-[0.6vw] min-h-[6px] min-w-[6px] animate-pulse rounded-full ${bookingViewState === "idle" ? "bg-emerald-400" : "bg-red-500"}`}></span>
-                            {bookingViewState === "idle" ? "ว่าง" : currentBooking.status === "pending" ? "รออนุมัติ" : "กำลังใช้งาน"}
-                        </div>
-                        
-                        <h2 class="mt-[1.5vw] text-[clamp(24px,3.8vw,52px)] font-extrabold leading-tight text-white">
-                            {currentBooking.title}
-                        </h2>
-                        <p class="mt-[0.5vw] text-[clamp(18px,2.4vw,32px)] font-medium text-slate-300">
-                            {currentBooking.startTime} - {currentBooking.endTime}
-                        </p>
-                        <p class="mt-[0.8vw] text-[clamp(13px,1.3vw,18px)] text-slate-400">
-                            {bookingViewState === "idle" ? "ตอนนี้ไม่มีการจอง" : `รายละเอียด: ${currentBooking.detailLabel}`}
-                        </p>
-                        <p class="mt-[0.4vw] text-[clamp(13px,1.3vw,18px)] text-slate-400">
-                            ผู้จอง: {currentBooking.bookerName}
-                        </p>
-                    </div>
-
-                    <div class="mt-[0.5vw]">
-                        <div class="mb-[0.5vw] flex items-center justify-between text-[1.2vw] text-slate-400">
-                            <span>{progressNote}</span>
-                            <span class="font-semibold text-orange-400">{progressPercent}%</span>
-                        </div>
-                        <div class="h-[0.6vw] min-h-[6px] w-full overflow-hidden rounded-full bg-slate-900">
-                            <div
-                                class="h-full rounded-full bg-gradient-to-r from-red-500 to-orange-500 transition-all duration-1000 ease-out"
-                                style={`width: ${progressPercent}%`}
-                            ></div>
-                        </div>
-                    </div>
-                </article>
-
-                <article class="flex flex-col rounded-[2vw] border border-slate-800/80 bg-black p-[2vw] shadow-xl shadow-black/20 mb-[1vw]">
-                    <h3 class=" mb-[1vw] text-[1.2vw] font-semibold tracking-[0.16em] text-slate-400 uppercase">
-                        คิวถัดไปวันนี้
-                    </h3>
-                    
-                    <div class="space-y-[1vw] overflow-auto pr-[0.5vw] min-h-0">
-                        {#if upcomingBookings.length > 0}
-                            {#each upcomingBookings as booking}
-                                <div class="flex items-center justify-between gap-[1.5vw] rounded-[1.5vw] border border-slate-800 bg-slate-950 px-[1.5vw] py-[1.2vw]">
-                                    <div>
-                                        <p class="text-[clamp(14px,1.5vw,22px)] font-semibold text-white">
-                                            {booking.title}
-                                        </p>
-                                        <p class="mt-[0.2vw] text-[clamp(11px,1.1vw,16px)] text-slate-400">
-                                            ห้อง: {roomLocation}
-                                        </p>
-                                    </div>
-                                    <span class="shrink-0 rounded-[0.8vw] bg-slate-900 border border-slate-800 px-[1.2vw] py-[0.4vw] text-[clamp(11px,1.1vw,16px)] font-medium text-slate-300">
-                                        {booking.startTime} - {booking.endTime}
-                                    </span>
-                                </div>
-                            {/each}
-                        {:else}
-                            <div class="rounded-[1.5vw] border border-dashed border-slate-800 px-[1.5vw] py-[3vw] text-center text-[clamp(12px,1.3vw,18px)] text-slate-500">
-                                ไม่มีรายการจองถัดไป
-                            </div>
-                        {/if}
-                    </div>
-                </article>
+            <!-- 📁 คอลัมน์ฝั่งซ้าย -->
+            <div class="flex flex-col gap-[1vw] min-h-0">
+                <ActiveBookingCard {bookingViewState} {currentBooking} {progressNote} {progressPercent} />
+                <UpcomingBookingsList {upcomingBookings} {roomLocation} />
             </div>
 
-            <div class="flex flex-col gap-[1vw] ">
-                
-                <article class=" min-h-0 max-h-[32vw] flex flex-1 flex-col items-center justify-center rounded-[2vw] border border-slate-800/80 bg-black p-[2.5vw] text-center shadow-2xl shadow-black/40">
-                    <h3 class="text-[clamp(16px,2vw,28px)] font-bold text-white tracking-wide">
-                        ต้องการจองห้องนี้?
-                    </h3>
-                    <p class="mt-[0.5vw] text-[clamp(12px,1.3vw,18px)] text-slate-400">
-                        สแกน QR code เพื่อเปิดหน้าจอง
-                    </p>
-
-                    <div class="mt-[1.0vw] rounded-[1.5vw] bg-white p-[1.5vw] shadow-xl shadow-black/30">
-                        {#if qrCodeDataUrl}
-                            <img
-                                class="h-[15vw] w-[15vw] min-h-[140px] min-w-[140px] max-h-[240px] max-w-[240px] object-contain"
-                                src={qrCodeDataUrl}
-                                alt="QR code สำหรับจองห้อง"
-                            />
-                        {:else}
-                            <div class="grid h-[15vw] w-[15vw] min-h-[140px] min-w-[140px] max-h-[240px] max-w-[240px] place-items-center text-[1.2vw] font-semibold text-slate-950 animate-pulse">
-                                Loading QR...
-                            </div>
-                        {/if}
-                    </div>
-
-                    <div class="mt-[1.5vw] inline-flex rounded-full border border-indigo-500/10 bg-indigo-950/30 px-[1.2vw] py-[0.4vw] text-[clamp(10px,1.1vw,14px)] font-bold tracking-[0.14em] text-indigo-400 uppercase">
-                        SCAN TO BOOK NOW
-                    </div>
-                </article>
-
-                <article class="flex items-start gap-[0.5vw] rounded-[2vw] border border-indigo-500/10 bg-gradient-to-br from-indigo-950/20 to-black p-[0.5vw]  shadow-lg">
-                    <div class="text-[clamp(18px,2vw,28px)] leading-none select-none">💡</div>
-                    <div>
-                        <h4 class="text-[clamp(13px,1.3vw,18px)] font-semibold text-indigo-300">
-                            ข้อแนะนำการใช้งาน
-                        </h4>
-                        <p class="mt-[0.4vw] text-[clamp(11px,1.1vw,16px)] leading-relaxed text-slate-400">
-                            ถ้าประชุมเสร็จก่อนกำหนด ให้กดคืนห้องในระบบ เพื่อให้คนอื่นใช้งานต่อได้ทันที
-                        </p>
-                    </div>
-                </article>
-            </div>
+            <!-- 📁 คอลัมน์ฝั่งขวา -->
+            <QrBookingCard {qrCodeDataUrl} />
 
         </main>
     </div>
