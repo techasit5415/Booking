@@ -8,7 +8,9 @@
     import UpcomingBookingsList from '$lib/components/UpcomingBookingsList.svelte';
     import QrBookingCard from '$lib/components/QrBookingCard.svelte';
     import { page } from '$app/state';
-    
+
+    type ThemeMode = 'light' | 'dark';
+    const THEME_KEY = 'theme-mode';
 
     type BookingItem = {
         id: string;
@@ -38,8 +40,16 @@
 
     type BookingViewState = "active" | "idle";
 
+    // === Security: ป้องกัน filter injection ===
+    const SAFE_ID_PATTERN = /^[a-zA-Z0-9_-]{1,64}$/;
+    function isValidRoomId(id: string | undefined): id is string {
+        return typeof id === 'string' && SAFE_ID_PATTERN.test(id);
+    }
+    function escapeFilterValue(value: string): string {
+        return value.replace(/[\\"'\n\r\t]/g, '\\$&');
+    }
+
     const pocketbaseUrl = env.PUBLIC_POCKETBASE_URL || "";
-    // const currentRoomId = env.PUBLIC_ROOM_ID701 || "";
     const currentRoomId = page.params.roomId;
     const defaultRoomName = "CONFERENCE ROOM 01";
     const defaultRoomLocation = "อาคารอเนกประสงค์ ชั้น 3";
@@ -57,13 +67,11 @@
         },
     ];
 
+    let themeMode = $state<ThemeMode>('dark');
     let clockText = $state("");
     let dateText = $state("");
     let qrCodeDataUrl = $state("");
     let bookings = $state<BookingItem[]>(sampleBookings);
-    let connectionStatus = $state<"connecting" | "live" | "demo">(
-        pocketbaseUrl ? "connecting" : "demo",
-    );
     let roomName = $state(defaultRoomName);
     let roomLocation = $state(defaultRoomLocation);
     let bookingUrl = $state(defaultBookingUrl);
@@ -73,6 +81,27 @@
     let progressNote = $state("");
     let bookingViewState = $state<BookingViewState>("idle");
     let statusLabel = $state("DEMO MODE");
+
+    function getSystemTheme(): ThemeMode {
+        if (typeof window === 'undefined') return 'dark';
+        return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    function readStoredTheme(): ThemeMode | null {
+        if (typeof window === 'undefined') return null;
+        const v = localStorage.getItem(THEME_KEY);
+        return v === 'light' || v === 'dark' ? v : null;
+    }
+    function applyTheme(mode: ThemeMode) {
+        if (typeof document === 'undefined') return;
+        document.documentElement.classList.toggle('dark', mode === 'dark');
+    }
+    function setTheme(mode: ThemeMode) {
+        themeMode = mode;
+        applyTheme(mode);
+        if (typeof localStorage !== 'undefined') {
+            localStorage.setItem(THEME_KEY, mode);
+        }
+    }
 
     function updateClock() {
         const now = new Date();
@@ -89,20 +118,17 @@
     function updateDerivedState() {
         const now = Date.now();
 
-        // 1. ค้นหาคิวการจองในปัจจุบัน
         const activeBooking = bookings.find((booking) => {
             const startEpoch = booking.startEpoch ?? null;
             const endEpoch = booking.endEpoch ?? null;
 
             if (startEpoch === null || endEpoch === null) return false;
-            // ดักจับ: สเตตัสต้องเป็นกลุ่มที่เปิดใช้งานอยู่เท่านั้น (ไม่เอา cancelled หรือ pending)
             if (booking.status === "cancelled" || booking.status === "pending")
                 return false;
 
             return now >= startEpoch && now < endEpoch;
         });
 
-        // 2. ค้นหาคิวถัดไปในอนาคต (ห่างจากปัจจุบันไม่เกิน 24 ชั่วโมง)
         const nextBookings = bookings.filter((booking) => {
             const startEpoch = booking.startEpoch ?? null;
 
@@ -114,22 +140,20 @@
             return startEpoch > now && startEpoch - now < oneDayInMs;
         });
 
-        // 3. ปรับเปลี่ยน State
         bookingViewState = activeBooking ? "active" : "idle";
 
         currentBooking = activeBooking ?? {
             id: "empty",
-            title: "ไม่มีการจองในตอนนี้",
+            title: "ว่าง",
             detailLabel: "-",
-            startTime: "--:--",
-            endTime: "--:--",
+            startTime: "",
+            endTime: "",
             status: "cancelled",
             bookerName: "-",
         };
 
         upcomingBookings = nextBookings;
 
-        // 4. คำนวณ Progress Bar ด้วยเวลา Epoch มิลลิวินาทีโดยตรงจากโมเดลข้อมูล
         if (currentBooking.id === "empty") {
             progressPercent = 0;
             progressNote = "ห้องว่าง";
@@ -164,10 +188,8 @@
             day: "2-digit",
         }).formatToParts(date);
 
-        const year =
-            parts.find((part) => part.type === "year")?.value ?? "1970";
-        const month =
-            parts.find((part) => part.type === "month")?.value ?? "01";
+        const year = parts.find((part) => part.type === "year")?.value ?? "1970";
+        const month = parts.find((part) => part.type === "month")?.value ?? "01";
         const day = parts.find((part) => part.type === "day")?.value ?? "01";
 
         return `${year}-${month}-${day}`;
@@ -256,12 +278,27 @@
     }
 
     onMount(() => {
+        // 1. Init theme (sync กับ Dashboard ผ่าน localStorage)
+        const stored = readStoredTheme();
+        const initial = stored ?? getSystemTheme();
+        themeMode = initial;
+        applyTheme(initial);
+
+        const mql = window.matchMedia('(prefers-color-scheme: dark)');
+        const onSystemChange = (e: MediaQueryListEvent) => {
+            if (readStoredTheme() === null) {
+                themeMode = e.matches ? 'dark' : 'light';
+                applyTheme(themeMode);
+            }
+        };
+        mql.addEventListener('change', onSystemChange);
+
+        // 2. Clock
         updateClock();
         const clockTimer = window.setInterval(updateClock, 1000);
         let destroyed = false;
         let pb: PocketBase | null = null;
 
-        // มูฟฟังก์ชันสร้าง QR Code เข้ามาไว้ข้างใน onMount เพื่อแชร์ Scope ร่วมกัน
         async function generateQrCode() {
             try {
                 qrCodeDataUrl = await QRCode.toDataURL(bookingUrl, {
@@ -276,39 +313,41 @@
 
         async function initRealtimeSystem() {
             if (!pocketbaseUrl) {
-                connectionStatus = "demo";
                 statusLabel = "DEMO MODE";
                 await generateQrCode();
                 return;
             }
 
+            // === Security: validate roomId ก่อน ===
+            if (!isValidRoomId(currentRoomId)) {
+                console.warn(`Invalid roomId: ${currentRoomId}`);
+                statusLabel = "INVALID ROOM";
+                return;
+            }
+            const safeRoomId = escapeFilterValue(currentRoomId);
+
             try {
                 pb = new PocketBase(pocketbaseUrl);
-                const todayKey = getBangkokDateKey();
 
-                // 1. ดึงข้อมูลตัวห้องจาก env ตัวแปรใหม่
-                if (currentRoomId) {
-                    try {
-                        const room = await pb
-                            .collection("rooms")
-                            .getOne(currentRoomId);
-                        if (!destroyed) {
-                            const mappedRoom = mapRoom(room);
-                            roomName = mappedRoom.name;
-                            roomLocation = mappedRoom.location;
-                            bookingUrl = mappedRoom.booking_url || bookingUrl;
-                        }
-                    } catch (err) {
-                        console.error(
-                            `หาห้องไอดี ${currentRoomId} ไม่เจอในระบบ`,
-                            err,
-                        );
+                // 1. โหลดข้อมูลห้อง
+                try {
+                    const room = await pb.collection("rooms").getOne(safeRoomId);
+                    if (!destroyed) {
+                        const mappedRoom = mapRoom(room);
+                        roomName = mappedRoom.name;
+                        roomLocation = mappedRoom.location;
+                        bookingUrl = mappedRoom.booking_url || bookingUrl;
                     }
+                } catch (err) {
+                    console.error(
+                        `หาห้องไอดี ${currentRoomId} ไม่เจอในระบบ`,
+                        err,
+                    );
                 }
 
-                // 2. ดึงตารางจองทั้งหมดที่ผูกกับห้องนี้
+                // 2. ดึงตารางจอง (filter ใช้ safeRoomId)
                 const records = await pb.collection("bookings").getFullList({
-                    filter: `field = "(${currentRoomId})", { roomId: currentRoomId }`,
+                    filter: `field = "${safeRoomId}"`,
                     sort: "start_time",
                     expand: "field",
                 });
@@ -317,43 +356,39 @@
                     bookings = records.map((rec) =>
                         mapRecord(rec as BookingRecord),
                     );
-                    connectionStatus = "live";
-                    statusLabel = "REALTIME";
-                    await generateQrCode(); // เรียกใช้ได้ฉลุยแล้ว
+                    statusLabel = "LIVE";
+                    await generateQrCode();
                 }
 
-                // 3. เปิดระบบ Realtime ดักฟิลเตอร์ข้อมูลเฉพาะไอดีห้องที่กำหนด
-                if (currentRoomId) {
-                    await pb
-                        .collection("rooms")
-                        .subscribe(currentRoomId, async (e) => {
-                            if (destroyed) return;
-                            const mappedRoom = mapRoom(e.record);
-                            roomName = mappedRoom.name;
-                            roomLocation = mappedRoom.location;
-                            bookingUrl = mappedRoom.booking_url || bookingUrl;
-                            await generateQrCode();
-                        });
-                }
+                // 3. Subscribe room updates
+                await pb.collection("rooms").subscribe(safeRoomId, async (e) => {
+                    if (destroyed) return;
+                    const mappedRoom = mapRoom(e.record);
+                    roomName = mappedRoom.name;
+                    roomLocation = mappedRoom.location;
+                    bookingUrl = mappedRoom.booking_url || bookingUrl;
+                    await generateQrCode();
+                });
 
+                // 4. Subscribe bookings
                 await pb.collection("bookings").subscribe("*", async () => {
                     if (destroyed || !pb) return;
                     const nextRecords = await pb
                         .collection("bookings")
                         .getFullList({
-                            filter: `field = "${currentRoomId}"`,
+                            filter: `field = "${safeRoomId}"`,
                             sort: "start_time",
                             expand: "field",
                         });
                     bookings = nextRecords.map((rec) =>
                         mapRecord(rec as BookingRecord),
                     );
+                    updateDerivedState();
                 });
             } catch (error) {
                 console.error("PocketBase connection error:", error);
                 if (!destroyed) {
-                    connectionStatus = "demo";
-                    statusLabel = "OFFLINE MODE";
+                    statusLabel = "OFFLINE";
                     bookings = sampleBookings;
                     await generateQrCode();
                 }
@@ -365,9 +400,11 @@
         return () => {
             destroyed = true;
             window.clearInterval(clockTimer);
+            mql.removeEventListener('change', onSystemChange);
             if (pb) {
-                if (currentRoomId)
+                if (isValidRoomId(currentRoomId)) {
                     pb.collection("rooms").unsubscribe(currentRoomId);
+                }
                 pb.collection("bookings").unsubscribe("*");
             }
         };
@@ -375,7 +412,7 @@
 </script>
 
 <svelte:head>
-    <title>{roomName} | Booking Dashboard</title>
+    <title>{roomName} | Booking</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link
@@ -384,27 +421,41 @@
         crossorigin="anonymous"
     />
     <link
-        href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;600;700;800&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&family=Prompt:wght@300;400;500;600;700&display=swap"
         rel="stylesheet"
     />
 </svelte:head>
 
-<div class="min-h-screen w-screen overflow-hidden bg-black p-[1vw] text-slate-100 font-['Prompt',sans-serif]">
-    <div class="flex flex-col gap-[1vw]">
-        
-        <!-- 1. ส่วนหัวเว็บ -->
-        <RoomHeader {roomName} {roomLocation} {clockText} {dateText} {statusLabel} />
+<div class="min-h-screen w-screen bg-white text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100 font-['Inter','Prompt',sans-serif] antialiased">
+    <div class="mx-auto flex min-h-screen max-w-400 flex-col gap-2 px-6 py-6 md:px-10 md:py-8">
 
-        <!-- 2. บล็อกกระดาน Grid แบ่งซ้ายขวาทุกขนาดจอ -->
-        <main class="grid flex-1 min-h-0 gap-[1vw] grid-cols-[1.3fr_0.9fr]">
-            
-            <!-- 📁 คอลัมน์ฝั่งซ้าย -->
-            <div class="flex flex-col gap-[1vw] min-h-0">
-                <ActiveBookingCard {bookingViewState} {currentBooking} {progressNote} {progressPercent} />
-                <UpcomingBookingsList {upcomingBookings} {roomLocation} />
+        <!-- 1. Header -->
+        <RoomHeader
+            {roomName}
+            {roomLocation}
+            {clockText}
+            {dateText}
+            {statusLabel}
+        />
+
+        <!-- 2. Main grid -->
+        <main class="grid flex-1 min-h-0 gap-1 grid-cols-1 grid-cols-[1.3fr_0.9fr]">
+
+            <!-- Left column -->
+            <div class="flex flex-col gap-2 min-h-0">
+                <ActiveBookingCard
+                    {bookingViewState}
+                    {currentBooking}
+                    {progressNote}
+                    {progressPercent}
+                />
+                <UpcomingBookingsList
+                    {upcomingBookings}
+                    {roomLocation}
+                />
             </div>
 
-            <!-- 📁 คอลัมน์ฝั่งขวา -->
+            <!-- Right column -->
             <QrBookingCard {qrCodeDataUrl} />
 
         </main>

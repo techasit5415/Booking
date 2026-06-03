@@ -2,45 +2,44 @@
     let { qrCodeDataUrl = '' } = $props();
 </script>
 
-<div class="flex flex-col gap-[1vw]">
-    <!-- SUB-CARD: QR CODE -->
-    <article class="mt-[0.1vw] flex flex-1 flex-col items-center justify-center rounded-[2vw] border border-slate-800/80 bg-black p-[1vw] text-center shadow-2xl shadow-black/40">
-        <h3 class="  text-[clamp(16px,2vw,28px)] font-bold text-white tracking-wide">
-            ต้องการจองห้องนี้?
-        </h3>
-        <p class="mt-[0.2vw] text-[clamp(12px,1.3vw,18px)] text-slate-400">
-            สแกน QR code เพื่อเปิดหน้าจอง
-        </p>
+<div class="flex flex-col gap-2">
+    <!-- QR Card -->
+    <article class="flex flex-col items-center gap-1 rounded-lg border border-zinc-200 bg-white p-1 text-center dark:border-zinc-800 dark:bg-zinc-950">
+        <div class="flex flex-col gap-1">
+            <h3 class="text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
+                ต้องการจองห้องนี้?
+            </h3>
+            <p class="text-xs text-zinc-500 dark:text-zinc-400">
+                สแกน QR code เพื่อเปิดหน้าจอง
+            </p>
+        </div>
 
-        <div class="mt-[1vw] rounded-[1.5vw] bg-white p-[1vw] shadow-xl shadow-black/30">
+        <div class="rounded-md border border-zinc-200 bg-white p-1 dark:border-zinc-800">
             {#if qrCodeDataUrl}
                 <img
-                    class="h-[15vw] w-[15vw] min-h-[140px] min-w-[140px] max-h-[240px] max-w-[240px] object-contain"
+                    class="h-10 w-30 md:h-44 md:w-44 object-contain"
                     src={qrCodeDataUrl}
                     alt="QR code สำหรับจองห้อง"
                 />
             {:else}
-                <div class="grid h-[15vw] w-[15vw] min-h-[140px] min-w-[140px] max-h-[240px] max-w-[240px] place-items-center text-[1.2vw] font-semibold text-slate-950 animate-pulse">
-                    Loading QR...
+                <div class="grid h-10 w-30 md:h-44 md:w-44 place-items-center text-sm font-semibold text-zinc-400 dark:text-zinc-500">
+                    Loading...
                 </div>
             {/if}
         </div>
 
-        <div class="mt-[0.4vw] inline-flex rounded-full border border-indigo-500/10 bg-indigo-950/30 px-[1.2vw] py-[0.4vw] text-[clamp(10px,1.1vw,14px)] font-bold tracking-[0.14em] text-indigo-400 uppercase">
-            SCAN TO BOOK NOW
+        <div class="text-[10px] font-semibold tracking-[0.2em] text-zinc-400 uppercase dark:text-zinc-500">
+            Scan to book
         </div>
     </article>
 
-    <!-- SUB-CARD: TIPS -->
-    <article class="flex items-start gap-[1vw] rounded-[2vw] border border-indigo-500/20  bg-black p-[1.8vw] shadow-lg">
-        <div class="text-[clamp(18px,2vw,28px)] leading-none select-none"></div>
-        <div>
-            <h4 class="text-[clamp(13px,1.3vw,18px)] font-semibold text-indigo-300">
-                ข้อแนะนำการใช้งาน
-            </h4>
-            <p class="mt-[0.2vw] text-[clamp(11px,1.1vw,16px)] leading-relaxed text-slate-400">
-                ถ้าประชุมเสร็จก่อนกำหนด ให้กดคืนห้องในระบบ เพื่อให้คนอื่นใช้งานต่อได้ทันที
-            </p>
-        </div>
+    <!-- Tips -->
+    <article class="flex flex-col gap-0.5 rounded-lg border border-zinc-200 bg-zinc-50 p-1 dark:border-zinc-800 dark:bg-zinc-900/40">
+        <h4 class="text-sm font-semibold tracking-[0.15em] text-zinc-700 uppercase dark:text-zinc-300 ml-1">
+             ข้อแนะนำ
+        </h4>
+        <p class="text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
+            ถ้าประชุมเสร็จก่อนกำหนด ให้กดคืนห้องในระบบ เพื่อให้คนอื่นใช้งานต่อได้ทันที
+        </p>
     </article>
 </div>

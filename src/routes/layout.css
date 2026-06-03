@@ -1,1 +1,14 @@
 @import 'tailwindcss';
+
+/* Tailwind v4: enable dark: variant when .dark class is on ancestor */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Smooth color transitions for theme switching */
+html {
+    color-scheme: light dark;
+}
+
+html,
+body {
+    transition: background-color 200ms ease, color 200ms ease;
+}

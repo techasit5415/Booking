@@ -8,6 +8,9 @@
 
     const pocketbaseUrl = env.PUBLIC_POCKETBASE_URL || '';
     const CALENDAR_CELLS = 42; // 6 weeks × 7 days
+    const THEME_KEY = 'theme-mode';
+
+    type ThemeMode = 'light' | 'dark';
 
     // Hoisted formatters (สร้างครั้งเดียว reuse ได้)
     const BANGKOK_TIME_FORMAT = new Intl.DateTimeFormat('th-TH', {
@@ -19,15 +22,12 @@
     const BANGKOK_DATE_FORMAT = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Bangkok' });
 
     // === Security: ป้องกัน PocketBase filter injection ===
-    // Whitelist pattern: roomId ต้องเป็น alphanumeric + dash/underscore เท่านั้น (ยาว 1-64 ตัว)
-    // ถ้า URL param ไม่ตรง pattern จะ reject ทันที (ไม่พึ่ง escape อย่างเดียว เพราะ escape ทำได้ยาก)
     const SAFE_ID_PATTERN = /^[a-zA-Z0-9_-]{1,64}$/;
 
     function isValidRoomId(id: string | undefined): id is string {
         return typeof id === 'string' && SAFE_ID_PATTERN.test(id);
     }
 
-    // Defense in depth: escape special chars ที่อาจหลุดรอด whitelist (belt + suspenders)
     function escapeFilterValue(value: string): string {
         return value.replace(/[\\"'\n\r\t]/g, '\\$&');
     }
@@ -46,8 +46,25 @@
         return BANGKOK_DATE_FORMAT.format(new Date(utcTimeString.replace(' ', 'T')));
     }
 
+    function getSystemTheme(): ThemeMode {
+        if (typeof window === 'undefined') return 'dark';
+        return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+
+    function readStoredTheme(): ThemeMode | null {
+        if (typeof window === 'undefined') return null;
+        const v = localStorage.getItem(THEME_KEY);
+        return v === 'light' || v === 'dark' ? v : null;
+    }
+
+    function applyTheme(mode: ThemeMode) {
+        if (typeof document === 'undefined') return;
+        document.documentElement.classList.toggle('dark', mode === 'dark');
+    }
+
+    // Theme state: เริ่มต้น 'dark' ป้องกัน FOUC ตอน SSR / hydration แล้วค่อย sync ใน onMount
+    let themeMode = $state<ThemeMode>('dark');
     let currentRoomId = $derived(page.params.roomId);
-    // local state สำหรับ bind:value ใน select (sync กับ URL ผ่าน $effect ด้านล่าง)
     let selectedRoomId = $state<string>('');
     let calendarDays = $state<any[]>([]);
     let clockText = $state('');
@@ -56,15 +73,13 @@
     let rawRooms = $state<any[]>([]);
     let pb: PocketBase | null = null;
 
-    // derived: ชื่อห้องปัจจุบันจาก rawRooms + currentRoomId
     let currentRoomName = $derived(
         rawRooms.find((r) => r.id === currentRoomId)?.name ?? 'กำลังโหลดข้อมูลห้อง...'
     );
 
-    // sync URL → local state (เฉพาะกรณี URL เปลี่ยนจากภายนอก เช่น back/forward หรือเปิดลิงก์ตรง)
-    // ใช้ untrack กับ selectedRoomId เพื่อไม่ให้ effect re-run ตอน user เปลี่ยน select
+    // sync URL → local state (กรณีเปิดลิงก์ตรง หรือ back/forward)
     $effect(() => {
-        const urlId = currentRoomId; // track เฉพาะ currentRoomId
+        const urlId = currentRoomId;
         if (urlId) {
             untrack(() => {
                 if (selectedRoomId !== urlId) {
@@ -107,8 +122,6 @@
 
                         const isOverlapping = bookingStartEpoch <= cellEndEpoch && bookingEndEpoch >= cellStartEpoch;
                         const isStatusValid = b.status === 'approved' || b.status === 'confirmed';
-
-                        // กรองเฉพาะคิวของห้องนี้ (กัน edge case เผื่อ filter ฝั่ง server หลุด)
                         const isThisRoom = b.field === currentRoomId;
 
                         return isOverlapping && isStatusValid && isThisRoom;
@@ -125,7 +138,6 @@
                     const bookingStartDateOnly = formatToBangkokDate(b.start_time);
                     const bookingEndDateOnly = formatToBangkokDate(b.end_time);
 
-                    // กรณีเดียวกันทั้ง start/end → ไม่ต้องเขียนซ้ำ
                     let displayTime = `${startTimeTH} - ${endTimeTH}`;
                     if (bookingStartDateOnly !== dateStrKey && bookingEndDateOnly === dateStrKey) {
                         displayTime = `จนถึง ${endTimeTH}`;
@@ -153,7 +165,32 @@
         return daysArray;
     }
 
+    function setTheme(mode: ThemeMode) {
+        themeMode = mode;
+        applyTheme(mode);
+        if (typeof localStorage !== 'undefined') {
+            localStorage.setItem(THEME_KEY, mode);
+        }
+    }
+
     onMount(() => {
+        // 1. Init theme จาก localStorage หรือ system
+        const stored = readStoredTheme();
+        const initial = stored ?? getSystemTheme();
+        themeMode = initial;
+        applyTheme(initial);
+
+        // ฟังการเปลี่ยน theme จาก OS ตอนที่ user ยังไม่ได้เลือกเอง
+        const mql = window.matchMedia('(prefers-color-scheme: dark)');
+        const onSystemChange = (e: MediaQueryListEvent) => {
+            if (readStoredTheme() === null) {
+                themeMode = e.matches ? 'dark' : 'light';
+                applyTheme(themeMode);
+            }
+        };
+        mql.addEventListener('change', onSystemChange);
+
+        // 2. Clock
         function updateClock() {
             const now = new Date();
             clockText = now.toLocaleTimeString('th-TH', { hour12: false });
@@ -166,24 +203,22 @@
 
         return () => {
             window.clearInterval(clockTimer);
+            mql.removeEventListener('change', onSystemChange);
         };
     });
 
-    // ✨ Reactive data fetching - re-run เมื่อ currentRoomId เปลี่ยน (รวมถึงตอนเปิดลิงก์ตรง หรือกด back/forward)
+    // ✨ Reactive data fetching - re-run เมื่อ currentRoomId เปลี่ยน
     $effect(() => {
         const roomId = currentRoomId;
         if (!roomId || !pocketbaseUrl) return;
 
         let cancelled = false;
-        // เคลียร์ข้อมูลเก่าทันที เพื่อป้องกัน flash ข้อมูลห้องเก่า
         calendarDays = [];
 
         (async () => {
-            // ใช้ pb instance เดียวกันตลอดอายุ component
             if (!pb) pb = new PocketBase(pocketbaseUrl);
 
             try {
-                // โหลด rawRooms แค่ครั้งเดียว (cache)
                 const existingRooms = untrack(() => rawRooms);
                 let rooms = existingRooms;
                 if (rooms.length === 0) {
@@ -192,23 +227,19 @@
                     rawRooms = rooms;
                 }
 
-                // คำนวณ date range ของเดือนปัจจุบัน
                 const now = new Date();
                 const startRange = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
                 const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
                 const endRange = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${lastDay}`;
 
-                // Whitelist validation: ถ้า roomId มี special chars ที่น่าสงสัย → abort
                 if (!isValidRoomId(roomId)) {
                     console.warn(`Invalid roomId format: ${roomId}`);
                     return;
                 }
-                // Defense in depth: escape อีกชั้นก่อนใส่ filter (เผื่อ whitelist มี bug)
                 const safeRoomId = escapeFilterValue(roomId);
                 const buildFilter = (rid: string) =>
                     `date >= "${startRange}" && date <= "${endRange}" && field = "${rid}" && (status = "approved" || status = "confirmed")`;
 
-                // กรองดึงเฉพาะคิวของห้องนี้จากหลังบ้าน
                 const bookings = await pb!.collection('bookings').getFullList({
                     filter: buildFilter(safeRoomId)
                 });
@@ -216,11 +247,9 @@
                 if (cancelled) return;
                 calendarDays = generateMonthGridStructure(rooms, bookings);
 
-                // Subscribe live updates (unsubscribe ตัวเก่าก่อน subscribe ใหม่)
                 pb!.collection('bookings').unsubscribe('*');
                 await pb!.collection('bookings').subscribe('*', async () => {
                     if (cancelled || !pb) return;
-                    // ใช้ safeRoomId จาก closure (ค่าตอน subscribe) เพื่อหลีกเลี่ยง race กับ navigation
                     const nextBookings = await pb.collection('bookings').getFullList({
                         filter: buildFilter(safeRoomId)
                     });
@@ -237,45 +266,99 @@
             if (pb) pb.collection('bookings').unsubscribe('*');
         };
     });
-    
 </script>
 
-<div class="min-h-screen w-screen bg-black p-[1vw] text-slate-100 font-['Prompt',sans-serif]">
-    <div class="flex flex-col gap-[1vw]">
-        
-        <header class="flex flex-col gap-[1vw] border-b border-slate-800/80 pb-[1vw] md:flex-row md:items-end md:justify-between pr-[4vw]">
-            <div>
-                <div class="inline-flex rounded-full border border-indigo-500/20 bg-indigo-950/40 px-[0.3vw] py-[0.1vw] text-[1vw] font-bold tracking-widest text-indigo-300 uppercase mb-[0.6vw]">
-                    Room Schedule
-                <select
-                    bind:value={selectedRoomId}
-                    onchange={() => {
-                        if (selectedRoomId) {
-                            goto(`/Dashboard/${selectedRoomId}`);
-                        }
-                    }}
-                    class="bg-slate-900 border border-slate-800 text-slate-300 text-[clamp(12px,1vw,15px)] font-semibold rounded-[0.6vw] px-[0.8vw] py-[0.2vw] focus:outline-none focus:border-indigo-500 cursor-pointer transition-colors"
-                >
-                    {#each rawRooms as room}
-                        <option value={room.id}>
-                            {room.name}
-                        </option>
-                    {/each}
-                </select>
+<svelte:head>
+    <title>ตาราง {currentRoomName} | Booking</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&family=Prompt:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet"
+    />
+</svelte:head>
+
+<div class="min-h-screen w-screen bg-white text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100 font-['Inter','Prompt',sans-serif] antialiased">
+    <div class="mx-auto flex min-h-screen max-w-[1600px] flex-col gap-10 px-6 py-8 md:px-10 md:py-10">
+
+        <!-- ============ HEADER ============ -->
+        <header class="flex flex-col gap-6 border-b border-zinc-200 pb-8 dark:border-zinc-800 md:flex-row md:items-end md:justify-between">
+            <div class="flex flex-col gap-3">
+                <div class="flex items-center gap-3 text-[11px] font-semibold tracking-[0.2em] text-zinc-500 uppercase">
+                    <span class="inline-block h-1.5 w-1.5 rounded-full bg-zinc-900 dark:bg-zinc-100"></span>
+                    Room Schedule · {currentMonthName}
                 </div>
-                <h1 class="text-[clamp(28px,4vw,40px)] font-black text-white leading-none tracking-tight">
-                    ตารางปฏิทิน {currentRoomName} ประจำเดือน {currentMonthName}
+                <h1 class="text-4xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 md:text-5xl">
+                    {currentRoomName}
                 </h1>
-                
             </div>
-            
-            <div class="text-left md:text-right font-mono">
-                <div class="text-[clamp(32px,4.5vw,48px)] font-extrabold text-indigo-300 leading-none">{clockText}</div>
-                <div class="text-[clamp(12px,1.2vw,16px)] text-slate-500 mt-[0.4vw] font-['Prompt']">{dateText}</div>
+
+            <div class="flex flex-col items-start gap-1 md:items-end">
+                <div class="font-['JetBrains_Mono',monospace] text-3xl font-medium tabular-nums text-zinc-900 dark:text-zinc-100 md:text-4xl">
+                    {clockText}
+                </div>
+                <div class="text-xs font-medium text-zinc-500 dark:text-zinc-400 md:text-sm">
+                    {dateText}
+                </div>
             </div>
         </header>
 
-        <main>
+        <!-- ============ CONTROLS ============ -->
+        <div class="flex flex-col items-stretch gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <!-- Room selector -->
+            <div class="flex items-center gap-3">
+                <label for="room-select" class="text-[11px] font-semibold tracking-[0.2em] text-zinc-500 uppercase">
+                    Room
+                </label>
+                <div class="relative">
+                    <select
+                        id="room-select"
+                        bind:value={selectedRoomId}
+                        onchange={() => {
+                            if (selectedRoomId) {
+                                goto(`/Dashboard/${selectedRoomId}`);
+                            }
+                        }}
+                        class="appearance-none rounded-md border border-zinc-200 bg-white py-1.5 pr-8 pl-3 text-sm font-medium text-zinc-900 transition-colors hover:border-zinc-300 focus:border-zinc-900 focus:outline-none dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:border-zinc-700 dark:focus:border-zinc-100"
+                    >
+                        {#if rawRooms.length === 0}
+                            <option value="">กำลังโหลด...</option>
+                        {/if}
+                        {#each rawRooms as room}
+                            <option value={room.id}>{room.name}</option>
+                        {/each}
+                    </select>
+                    <svg class="pointer-events-none absolute top-1/2 right-2.5 h-3.5 w-3.5 -translate-y-1/2 text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                    </svg>
+                </div>
+            </div>
+
+            <!-- Segmented theme toggle -->
+            <div class="inline-flex items-center self-start rounded-md border border-zinc-200 bg-zinc-50 p-0.5 text-xs font-semibold tracking-wider uppercase sm:self-auto dark:border-zinc-800 dark:bg-zinc-900">
+                <button
+                    type="button"
+                    onclick={() => setTheme('light')}
+                    class="rounded-[5px] px-3 py-1.5 transition-colors {themeMode === 'light' ? 'bg-white text-zinc-900 shadow-sm dark:bg-zinc-100 dark:text-zinc-900' : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'}"
+                    aria-label="Light mode"
+                    aria-pressed={themeMode === 'light'}
+                >
+                    Light
+                </button>
+                <button
+                    type="button"
+                    onclick={() => setTheme('dark')}
+                    class="rounded-[5px] px-3 py-1.5 transition-colors {themeMode === 'dark' ? 'bg-white text-zinc-900 shadow-sm dark:bg-zinc-100 dark:text-zinc-900' : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'}"
+                    aria-label="Dark mode"
+                    aria-pressed={themeMode === 'dark'}
+                >
+                    Dark
+                </button>
+            </div>
+        </div>
+
+        <!-- ============ CALENDAR ============ -->
+        <main class="flex-1">
             <MonthlyStatusCalendar {calendarDays} />
         </main>
 

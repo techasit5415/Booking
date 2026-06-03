@@ -1,41 +1,33 @@
 <script lang="ts">
-    let { 
-        roomName = '', 
-        roomLocation = '', 
-        clockText = '', 
-        dateText = '', 
-        statusLabel = '' 
+    let {
+        roomName = '',
+        roomLocation = '',
+        clockText = '',
+        dateText = '',
+        statusLabel = ''
     } = $props();
 </script>
 
-<header class="flex flex-col gap-[1.0vw] border-b border-slate-800/80 pb-[1.0vw] md:flex-row md:items-center md:justify-between">
-    
-    <div class="flex items-center gap-[1.5vw] mt-[0.5vw]">
-    
-        <div class="rounded-[1.5vw] bg-indigo-600 px-[1.5vw] py-[1vw] text-[1.5vw] font-extrabold tracking-[0.16em] text-white shadow-lg shadow-indigo-950/30">
-            ROOM
+<header class="flex flex-col gap-6 border-b border-zinc-200 pb-2 dark:border-zinc-800 md:flex-row md:items-end md:justify-between h-17">
+    <div class="flex flex-col gap-0.1">
+        <div class="flex items-center gap-3 text-[11px] font-semibold tracking-[0.2em] text-zinc-500 uppercase">
+            <span class="inline-block h-1 w-1.5 rounded-full bg-zinc-900 dark:bg-zinc-100"></span>
+            Room · {statusLabel}
         </div>
-        
-        <div>
-            <h1 class="text-[clamp(24px,3.5vw,48px)] font-bold text-white leading-none">
-                {roomName}
-            </h1>
-            <p class="mt-[0.3vw] text-[clamp(13px,1.2vw,18px)] text-slate-400">
-                ห้อง: {roomLocation}
-            </p>        <div class="mt-[0.5vw] inline-flex rounded-full border border-indigo-400/20 bg-slate-950/80 px-[1vw] py-[0.2vw] text-[1vw] font-bold tracking-[0.14em] text-indigo-300">
-            {statusLabel}
-        </div>
-        </div>
-        
+        <h1 class=" text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 md:text-2xl">
+            {roomName}
+        </h1>
+        <p class="text-sm font-medium text-zinc-500 dark:text-zinc-400 md:text-base">
+            {roomLocation}
+        </p>
     </div>
 
-    <div class="text-left md:text-right pr-[4vw] ">
-        <div class="mt-[0.5vw] md:mt-0.5 text-[clamp(36px,5vw,68px)] font-extrabold leading-none text-indigo-300 tracking-tight">
+    <div class="flex flex-col items-start  md:items-end">
+        <div class="font-['JetBrains_Mono',monospace] text-1xl font-medium tabular-nums text-zinc-900 dark:text-zinc-100 md:text-3xl">
             {clockText}
         </div>
-        <div class="mt-[0.5vw] text-[clamp(13px,1.2vw,18px)] text-slate-400">
+        <div class="text-xs font-medium text-zinc-500 dark:text-zinc-400 md:text-sm">
             {dateText}
         </div>
-
     </div>
 </header>
