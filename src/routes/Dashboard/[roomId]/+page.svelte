@@ -282,9 +282,9 @@
     <div class="mx-auto flex min-h-screen max-w-[1600px] flex-col gap-10 px-6 py-8 md:px-10 md:py-10">
 
         <!-- ============ HEADER ============ -->
-        <header class="flex flex-col gap-6 border-b border-zinc-200 pb-8 dark:border-zinc-800 md:flex-row md:items-end md:justify-between">
-            <div class="flex flex-col gap-3">
-                <div class="flex items-center gap-3 text-[11px] font-semibold tracking-[0.2em] text-zinc-500 uppercase">
+        <header class="flex flex-col gap-4 border-b border-zinc-200 pb-4 dark:border-zinc-800 md:flex-row md:items-end md:justify-between">
+            <div class="flex flex-col gap-1.5">
+                <div class="flex items-center gap-3 text-[14px] font-semibold tracking-[0.2em] text-zinc-500 uppercase">
                     <span class="inline-block h-1.5 w-1.5 rounded-full bg-zinc-900 dark:bg-zinc-100"></span>
                     Room Schedule · {currentMonthName}
                 </div>

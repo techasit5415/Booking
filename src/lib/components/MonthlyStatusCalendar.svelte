@@ -51,10 +51,10 @@
                     {#if day.isCurrentMonth && day.bookings.length > 0}
                         {#each day.bookings.slice(0, 3) as booking}
                             <div class="rounded border border-zinc-200 bg-zinc-50 px-2 py-1 text-left transition-colors hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-900/60 dark:hover:border-zinc-700">
-                                <p class="truncate text-[11px] font-semibold leading-tight text-zinc-800 dark:text-zinc-200">
+                                <p class="truncate text-[16px] font-semibold leading-tight text-zinc-800 dark:text-zinc-200 ">
                                     {booking.title}
                                 </p>
-                                <p class="mt-0.5 truncate font-['JetBrains_Mono',monospace] text-[10px] leading-tight text-zinc-500 dark:text-zinc-500">
+                                <p class="mt-0.5 truncate font-['JetBrains_Mono',monospace] text-[14px] leading-tight text-zinc-900 dark:text-zinc-500">
                                     {booking.time}
                                 </p>
                             </div>
@@ -65,7 +65,7 @@
                             </div>
                         {/if}
                     {:else if day.isCurrentMonth}
-                        <div class="hidden flex-1 items-center justify-center text-[10px] italic text-zinc-300 md:flex dark:text-zinc-700">
+                        <div class="hidden flex-1 items-center justify-center text-[12px] italic text-zinc-300 md:flex dark:text-zinc-700">
                             ว่าง
                         </div>
                     {/if}
