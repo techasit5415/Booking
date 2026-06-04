@@ -74,7 +74,6 @@
     let bookings = $state<BookingItem[]>(sampleBookings);
     let roomName = $state(defaultRoomName);
     let roomLocation = $state(defaultRoomLocation);
-    let bookingUrl = $state(defaultBookingUrl);
     let currentBooking = $state<BookingItem>(sampleBookings[0]);
     let upcomingBookings = $state<BookingItem[]>([]);
     let progressPercent = $state(0);
@@ -301,7 +300,9 @@
 
         async function generateQrCode() {
             try {
-                qrCodeDataUrl = await QRCode.toDataURL(bookingUrl, {
+                // QR ชี้ไปหน้า /book ภายในแอป (absolute URL เพื่อให้สแกนจากมือถือได้)
+                const bookUrl = `${window.location.origin}/book`;
+                qrCodeDataUrl = await QRCode.toDataURL(bookUrl, {
                     width: 280,
                     margin: 1,
                     color: { dark: "#0f172a", light: "#ffffff" },
@@ -336,7 +337,6 @@
                         const mappedRoom = mapRoom(room);
                         roomName = mappedRoom.name;
                         roomLocation = mappedRoom.location;
-                        bookingUrl = mappedRoom.booking_url || bookingUrl;
                     }
                 } catch (err) {
                     console.error(
@@ -366,7 +366,6 @@
                     const mappedRoom = mapRoom(e.record);
                     roomName = mappedRoom.name;
                     roomLocation = mappedRoom.location;
-                    bookingUrl = mappedRoom.booking_url || bookingUrl;
                     await generateQrCode();
                 });
 
@@ -426,7 +425,7 @@
     />
 </svelte:head>
 
-<div class="min-h-screen w-screen bg-white text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100 font-['Inter','Prompt',sans-serif] antialiased">
+<div class="min-h-screen w-screen bg-black text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100 font-['Inter','Prompt',sans-serif] antialiased">
     <div class="mx-auto flex min-h-screen max-w-400 flex-col gap-2 px-6 py-6 md:px-10 md:py-8">
 
         <!-- 1. Header -->
@@ -439,7 +438,7 @@
         />
 
         <!-- 2. Main grid -->
-        <main class="grid flex-1 min-h-0 gap-1 grid-cols-1 grid-cols-[1.3fr_0.9fr]">
+        <main class="grid flex-1 min-h-0 gap-2 grid-cols-1 grid-cols-[1.6fr_0.7fr]">
 
             <!-- Left column -->
             <div class="flex flex-col gap-2 min-h-0">

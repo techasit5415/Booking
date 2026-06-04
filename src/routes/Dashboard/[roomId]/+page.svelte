@@ -279,7 +279,7 @@
 </svelte:head>
 
 <div class="min-h-screen w-screen bg-white text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100 font-['Inter','Prompt',sans-serif] antialiased">
-    <div class="mx-auto flex min-h-screen max-w-[1600px] flex-col gap-10 px-6 py-8 md:px-10 md:py-10">
+    <div class="mx-auto flex min-h-screen max-w-400 flex-col gap-10 px-6 py-8 md:px-10 md:py-10">
 
         <!-- ============ HEADER ============ -->
         <header class="flex flex-col gap-4 border-b border-zinc-200 pb-4 dark:border-zinc-800 md:flex-row md:items-end md:justify-between">
@@ -305,33 +305,45 @@
 
         <!-- ============ CONTROLS ============ -->
         <div class="flex flex-col items-stretch gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <!-- Room selector -->
-            <div class="flex items-center gap-3">
-                <label for="room-select" class="text-[11px] font-semibold tracking-[0.2em] text-zinc-500 uppercase">
-                    Room
-                </label>
-                <div class="relative">
-                    <select
-                        id="room-select"
-                        bind:value={selectedRoomId}
-                        onchange={() => {
-                            if (selectedRoomId) {
-                                goto(`/Dashboard/${selectedRoomId}`);
-                            }
-                        }}
-                        class="appearance-none rounded-md border border-zinc-200 bg-white py-1.5 pr-8 pl-3 text-sm font-medium text-zinc-900 transition-colors hover:border-zinc-300 focus:border-zinc-900 focus:outline-none dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:border-zinc-700 dark:focus:border-zinc-100"
-                    >
-                        {#if rawRooms.length === 0}
-                            <option value="">กำลังโหลด...</option>
-                        {/if}
-                        {#each rawRooms as room}
-                            <option value={room.id}>{room.name}</option>
-                        {/each}
-                    </select>
-                    <svg class="pointer-events-none absolute top-1/2 right-2.5 h-3.5 w-3.5 -translate-y-1/2 text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
-                    </svg>
+            <!-- Room selector + Book button -->
+            <div class="flex flex-wrap items-center gap-3">
+                <div class="flex items-center gap-3">
+                    <label for="room-select" class="text-[11px] font-semibold tracking-[0.2em] text-zinc-500 uppercase">
+                        Room
+                    </label>
+                    <div class="relative">
+                        <select
+                            id="room-select"
+                            bind:value={selectedRoomId}
+                            onchange={() => {
+                                if (selectedRoomId) {
+                                    goto(`/Dashboard/${selectedRoomId}`);
+                                }
+                            }}
+                            class="appearance-none rounded-md border border-zinc-200 bg-white py-1.5 pr-8 pl-3 text-sm font-medium text-zinc-900 transition-colors hover:border-zinc-300 focus:border-zinc-900 focus:outline-none dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:border-zinc-700 dark:focus:border-zinc-100"
+                        >
+                            {#if rawRooms.length === 0}
+                                <option value="">กำลังโหลด...</option>
+                            {/if}
+                            {#each rawRooms as room}
+                                <option value={room.id}>{room.name}</option>
+                            {/each}
+                        </select>
+                        <svg class="pointer-events-none absolute top-1/2 right-2.5 h-3.5 w-3.5 -translate-y-1/2 text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </div>
                 </div>
+
+                <a
+                    href="/book"
+                    class="inline-flex items-center gap-1.5 rounded-md bg-zinc-900 px-3 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+                >
+                    <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                    </svg>
+                    จองห้อง
+                </a>
             </div>
 
             <!-- Segmented theme toggle -->

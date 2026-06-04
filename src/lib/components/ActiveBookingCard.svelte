@@ -31,7 +31,7 @@
     const META_CLASS = 'text-zinc-400';
 </script>
 
-<article class="relative flex min-h-10 flex-col justify-between gap-1 overflow-hidden rounded-lg border p-6 shadow-2xl shadow-black/40 {getArticleClass(bookingViewState, currentBooking.status)}">
+<article class="relative flex min-h-10 flex-col justify-between border-zinc-300 gap-1 overflow-hidden rounded-lg border p-3.5 shadow-2xl shadow-white/20 {getArticleClass(bookingViewState, currentBooking.status)}">
     <!-- แถบสีสถานะ (left bar) -->
     <div
         class="absolute inset-y-0 left-0 w-1 {getStatusBarClass(bookingViewState, currentBooking.status)}"
@@ -39,16 +39,16 @@
     ></div>
 
     <!-- Status + Title -->
-    <div class="flex flex-col gap-1">
-        <div class="inline-flex w-fit items-center gap-1 rounded-md border border-white/10 bg-white/5 px-3 py-1.5 text-[11px] font-semibold tracking-[0.15em] text-zinc-200 uppercase backdrop-blur-sm">
+    <div class="flex flex-col gap-1 ">
+        <div class="inline-flex w-fit items-center gap-1 rounded-md border border-zinc-600 bg-white/5 px-3 py-1.5 text-[11px] font-semibold tracking-[0.15em] text-zinc-200 uppercase backdrop-blur-sm">
             <span class="inline-block h-1.5 w-1.5 rounded-full {getStatusDotClass(bookingViewState, currentBooking.status)}"></span>
             {bookingViewState === "idle" ? "ว่าง" : currentBooking.status === "pending" ? "รออนุมัติ" : "กำลังใช้งาน"}
         </div>
 
         <div>
-            <h2 class="text-2xl font-bold leading-tight tracking-tight {TITLE_CLASS} md:text-4xl">
+            <h2 class="text-2xl font-bold leading-tight tracking-tight {TITLE_CLASS} md:text-4xl mt-1.5">
                 {currentBooking.title} 
-                <span class="ml-9 text-3xl font-medium {SUBTITLE_CLASS}">
+                <span class="ml-9 text-2xl font-medium {SUBTITLE_CLASS}">
                     ({currentBooking.startTime} - {currentBooking.endTime})
                 </span>
             </h2>
