@@ -12,6 +12,11 @@
     url.searchParams.set('redirect_uri', 'http://localhost:5173/auth/callback');
     // 3. กำหนดค่าพารามิเตอร์อื่นๆ ตามมาตรฐาน
     url.searchParams.set('response_type', 'code');
+    // OAuth scope
+    // - read:userinfo  → id, email, role (ใช้งานได้)
+    // - read:profile   → title, firstname_th, lastname_th ฯลฯ (ชั่วคราวปิดไว้ก่อน
+    //                    เพราะ KMITL auth server ตอบ 400 + body stream already read
+    //                    ต้องเช็ค KMITL admin ว่าลงทะเบียน scope นี้หรือยัง)
     url.searchParams.set('scope', 'read:userinfo');
     url.searchParams.set('state', 'any-random-string-123');
 

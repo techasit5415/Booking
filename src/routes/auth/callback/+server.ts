@@ -9,22 +9,38 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
         return json({ error: 'Authorization code missing' }, { status: 400 });
     }
 
+    // ประกาศตัวแปรไว้ข้างนอกเพื่อส่งผ่านข้อมูล
+    let loginSuccess = false;
+
     try {
-        // สั่งรันฟังก์ชันยิงตรงที่เราเพิ่งเขียนไปด้านบน
         const authData = await loginWithKmitlCode(code);
         
-        // เซ็ตสิทธิ์ Cookie กลับไปที่หน้าบ้าน
-        cookies.set('pb_auth', authData.token, { 
+        // สร้างก้อนข้อมูล Cookie รูปแบบมาตรฐานที่ PocketBase หน้าบ้านแกะอ่านได้ทันที
+        const cookiePayload = {
+            token: authData.token,
+            model: authData.model
+        };
+
+        // เซ็ตคุกกี้ชื่อ 'pb_auth' ส่งกลับไปที่เบราว์เซอร์
+        cookies.set('pb_auth', JSON.stringify(cookiePayload), { 
             path: '/', 
-            httpOnly: false,
-            secure: true,
-            maxAge: 60 * 60 * 24 * 7
+            // เปลี่ยนเป็น false ชั่วคราวเพื่อให้รันบน localhost ช่วงพัฒนาได้ไม่ติดปัญหาข้ามสายโปรโตคอล
+            // หากขึ้นระบบจริงบน https ค่อยเปลี่ยนกลับเป็น true ได้ครับ
+            secure: false, 
+            httpOnly: false, 
+            maxAge: 60 * 60 * 24 * 7 
         });
 
-        // ล็อกอินผ่านฉลุย พาไปหน้าแรกของแอปคุณได้เลย
-        throw redirect(302, '/dashboard');
+        loginSuccess = true;
     } catch (error) {
         console.error('OAuth Handling Error:', error);
         return json({ error: 'Authentication failed' }, { status: 500 });
     }
+
+    // ✅ ย้ายออกมายิงข้างนอกบล็อก Try-Catch เพื่อไม่ให้ SvelteKit สับสน
+    if (loginSuccess) {
+        throw redirect(302, '/book');
+    }
+    
+    return json({ error: 'Unknown process error' }, { status: 500 });
 };
