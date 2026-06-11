@@ -38,9 +38,21 @@ export async function loginWithKmitlCode(code: string) {
     const userData = userResponseData?.data ? userResponseData.data : userResponseData;
     console.log('KMITL user data:', userData);
 
-    // ชื่อ user — ตอนนี้ KMITL userinfo ไม่ส่งชื่อมา ใช้ email เป็น fallback
-    // (ถ้าวันหลังได้ scope read:profile แล้ว ค่อยกลับมาทำชื่อไทย)
-    const fullName = userData.name || userData.email?.split('@')[0] || 'KMITL User';
+    // รหัสนักศึกษา = prefix ของ email KMITL (เช่น 66050160@kmitl.ac.th → 66050160)
+    const studentId = userData.email?.split('@')[0] || '';
+
+    // ชื่อ user — KMITL userinfo ไม่ส่งชื่อมา ใช้ placeholder ที่อ่านได้แทน email prefix ดิบๆ
+    // (เมื่อ KMITL admin ลงทะเบียน scope read:profile แล้ว จะกลับมาใช้ชื่อไทยจริง)
+    const fullName = userData.name || (studentId ? `นักศึกษา ${studentId}` : 'KMITL User');
+
+    // username ใช้รหัสนักศึกษา (unique ต่อคน) แทน random string
+    // fallback เป็น random เฉพาะกรณีที่ email ไม่มี prefix (เช่น staff ที่ใช้ email อื่น)
+    const username = studentId || 'kmitl_' + Math.random().toString(36).substring(2, 7);
+
+    // helper: ตรวจว่า name ที่มีอยู่ใน PB เป็น placeholder เก่าที่ควร overwrite หรือไม่
+    // (กันไม่ให้ทับชื่อจริงที่ user อาจเคยแก้เอง)
+    const isPlaceholder = (n: string | undefined) =>
+        !n || n === 'KMITL User' || n.startsWith('นักศึกษา ');
 
     // 3. เข้าสิทธิ์ซูเปอร์ยูสเซอร์เพื่อไปเคลียร์ข้อมูลลงตาราง PocketBase
     await pbServer.collection('_superusers').authWithPassword(USER_ADMIN, USER_ADMIN_PASSWORD);
@@ -53,15 +65,18 @@ export async function loginWithKmitlCode(code: string) {
         targetUser = await pbServer.collection('users').getFirstListItem(`email="${userData.email}"`);
         console.log('พบผู้ใช้เดิมในระบบ:', targetUser.email);
 
-        // sync ชื่อและ user_type ให้ user เดิม (เผื่อข้อมูลเก่าไม่ครบ)
-        const needsNameUpdate = targetUser.name !== fullName;
+        // sync เฉพาะ field ที่ยังขาด หรือ placeholder เท่านั้น (ไม่ทับชื่อจริงที่ user แก้เอง)
+        const needsNameUpdate = isPlaceholder(targetUser.name) && targetUser.name !== fullName;
         const needsTypeUpdate = !targetUser.user_type;
-        if (needsNameUpdate || needsTypeUpdate) {
-            targetUser = await pbServer.collection('users').update(targetUser.id, {
-                name: fullName,
-                user_type: KMITL_USER_TYPE
-            });
-            console.log('อัพเดทข้อมูลผู้ใช้เดิม:', targetUser.id, '(name:', needsNameUpdate, ', user_type:', needsTypeUpdate, ')');
+        const updates: Record<string, string> = {};
+        if (needsNameUpdate) updates.name = fullName;
+        if (needsTypeUpdate) updates.user_type = KMITL_USER_TYPE;
+
+        if (Object.keys(updates).length > 0) {
+            targetUser = await pbServer.collection('users').update(targetUser.id, updates);
+            console.log('อัพเดทข้อมูลผู้ใช้เดิม:', targetUser.id, '→', Object.keys(updates).join(', '));
+        } else {
+            console.log('ข้อมูลผู้ใช้เดิมครบแล้ว ไม่ต้องอัพเดท');
         }
     } catch (e) {
         console.log('ไม่พบผู้ใช้เดิม กำลังสร้างบัญชีใหม่...');
@@ -69,13 +84,13 @@ export async function loginWithKmitlCode(code: string) {
         targetUser = await pbServer.collection('users').create({
             email: userData.email,
             name: fullName,
-            username: 'kmitl_' + Math.random().toString(36).substring(2, 7),
+            username,
             password: secureTempPassword,
             passwordConfirm: secureTempPassword,
             emailVisibility: true,
             user_type: KMITL_USER_TYPE
         });
-        console.log('สร้างบัญชีผู้ใช้ใหม่สำเร็จ:', targetUser.id, '| name:', fullName, '| user_type:', KMITL_USER_TYPE);
+        console.log('สร้างบัญชีผู้ใช้ใหม่สำเร็จ:', targetUser.id, '| name:', fullName, '| username:', username, '| user_type:', KMITL_USER_TYPE);
     }
 
     // 4. ✅ สั่งออก Token ประจำตัวให้สำหรับผู้ใช้คนนี้
