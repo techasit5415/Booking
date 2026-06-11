@@ -26,6 +26,7 @@
         bookerName?: string;
         bookerEmail?: string;
         booker_email?: string;
+        detailLabel?: string;
     };
 
     // === Security: validate roomId before using in filter ===
@@ -122,11 +123,11 @@
 async function loadRooms() {
     if (!pb) return;
     try {
-        // ✅ ส่งประเภท <Room> เข้าไปกำกับในฟังก์ชัน .getFullList เพื่อให้ TypeScript รู้จักฟิลด์ล่วงหน้า
+        
         const data = await pb.collection('rooms').getFullList<Room>({ 
             sort: 'name' 
         });
-        rooms = data; // 🟩 ใส่เข้าตัวแปร rooms ได้โดยตรง ไม่แดงแล้วครับ!
+        rooms = data; 
     } catch (err) {
         console.error('Failed to load rooms', err);
     } finally {
@@ -412,7 +413,7 @@ async function loadRooms() {
                     </button>
                     <button
                         type="button"
-                        onclick={() => goto('/')}
+                        onclick={() => goto('/book')}
                         class="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
                     >
                         กลับหน้าหลัก
@@ -606,6 +607,14 @@ async function loadRooms() {
                                                     <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                                                 </svg>
                                                 <span class="truncate">{b.bookerName || b.bookerEmail || b.booker_email}</span>
+                                            </p>
+                                        {/if}
+                                        {#if b.detailLabel}
+                                            <p class="flex items-start gap-1 truncate text-xs text-zinc-500 dark:text-zinc-400" title={b.detailLabel}>
+                                                <svg class="h-3 w-3 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                                </svg>
+                                                <span class="truncate">{b.detailLabel}</span>
                                             </p>
                                         {/if}
                                     </li>

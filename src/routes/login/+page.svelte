@@ -14,7 +14,8 @@
 
     // 2. ลิงก์จุดนัดพบที่วิ่งกลับมาหาหลังบ้านเรา (ต้องตรงกับที่ลงทะเบียนไว้ในแดชบอร์ดสถาบัน)
     // url.searchParams.set('redirect_uri', 'https://db.cskmitl.com/auth/callback');
-    url.searchParams.set('redirect_uri', 'http://localhost:5173/auth/callback');
+    // url.searchParams.set('redirect_uri', 'http://localhost:5173/auth/callback');
+    url.searchParams.set('redirect_uri', 'https://booking.cskmitl.com/auth/callback');
     // 3. กำหนดค่าพารามิเตอร์อื่นๆ ตามมาตรฐาน
     url.searchParams.set('response_type', 'code');
     // OAuth scope
