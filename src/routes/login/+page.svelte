@@ -22,7 +22,7 @@
     // - read:profile   → title, firstname_th, lastname_th ฯลฯ (ชั่วคราวปิดไว้ก่อน
     //                    เพราะ KMITL auth server ตอบ 400 + body stream already read
     //                    ต้องเช็ค KMITL admin ว่าลงทะเบียน scope นี้หรือยัง)
-    url.searchParams.set('scope', 'read:userinfo');
+    url.searchParams.set('scope', 'read:userinfo,read:profile');
     url.searchParams.set('state', 'any-random-string-123');
 
     // สั่งย้ายหน้าจอ
