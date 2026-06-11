@@ -12,7 +12,8 @@ export async function loginWithKmitlCode(code: string) {
             'grant_type': 'authorization_code',
             'client_id': 'CI0IHz3JNTe7v2SHEr3RkFTdIZgRPFZY.e637637a-5f74-491f-be6e-dfe6e299190c.client.iam.science.kmitl.ac.th',
             'client_secret': CLIENT_SECRET, 
-            'redirect_uri': 'http://localhost:5173/auth/callback',
+            // 'redirect_uri': 'http://localhost:5173/auth/callback',
+            'redirect_uri': 'https://booking.cskmitl.com/auth/callback',
             'code': code
         })
     });
