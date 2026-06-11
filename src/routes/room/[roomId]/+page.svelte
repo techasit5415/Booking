@@ -22,6 +22,8 @@
         endEpoch?: number | null;
         status: "confirmed" | "pending" | "cancelled";
         bookerName: string;
+        bookerEmail?: string;
+        booker_email?: string;
     };
 
     type BookingRecord = Record<string, unknown> & {
@@ -252,6 +254,7 @@
             expandedFieldName ||
             String(record.field ?? "Unknown room");
         const bookerName = String(record.bookerName ?? "").trim();
+        const bookerEmail = String(record.bookerEmail ?? record.booker_email ?? "").trim();
         const startRaw = String(record.start_time ?? "");
         const endRaw = String(record.end_time ?? "");
 
@@ -260,6 +263,8 @@
             title: String(record.title ?? "Untitled booking"),
             detailLabel,
             bookerName,
+            bookerEmail,
+            booker_email: bookerEmail,
             startTime: formatDisplayTime(startRaw),
             startEpoch: parseTimeToEpoch(startRaw),
             endTime: formatDisplayTime(endRaw),
@@ -426,7 +431,7 @@
 </svelte:head>
 
 <div class="min-h-screen w-screen bg-black text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100 font-['Inter','Prompt',sans-serif] antialiased">
-    <div class="mx-auto flex min-h-screen max-w-400 flex-col gap-2 px-6 py-6 md:px-10 md:py-8">
+    <div class="mx-auto flex min-h-screen max-w-400 flex-col gap-2 px-6 pt-6 pb-6 md:px-10 md:pt-8 md:pb-8">
 
         <!-- 1. Header -->
         <RoomHeader

@@ -1,10 +1,15 @@
 <script lang="ts">
     let {
         bookingViewState = 'idle',
-        currentBooking = { title: '', startTime: '', endTime: '', detailLabel: '', bookerName: '', status: '' },
+        currentBooking = { title: '', startTime: '', endTime: '', detailLabel: '', bookerName: '', bookerEmail: '', booker_email: '', status: '' },
         progressNote = '',
         progressPercent = 0
     } = $props();
+
+    // ชื่อคนจอง — fallback email ถ้าชื่อว่าง
+    const displayBooker = $derived(
+        currentBooking.bookerName || currentBooking.bookerEmail || currentBooking.booker_email || '-'
+    );
 
     // กำหนดสีของ article (border + background gradient)
     function getArticleClass(state: string, status: string): string {
@@ -62,7 +67,7 @@
                     รายละเอียด: {currentBooking.detailLabel}
                 </p>
                 <p class="mt-0.5 text-sm {META_CLASS}">
-                    ผู้จอง: {currentBooking.bookerName}
+                    ผู้จอง: {displayBooker}
                 </p>
             {/if}
         </div>

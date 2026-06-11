@@ -2,9 +2,17 @@
 // for information about these interfaces
 declare global {
 	namespace App {
+		interface Locals {
+			session: import('$lib/server/auth').Session | null;
+		}
+		interface PageData {
+			user?: {
+				userId: string;
+				name: string;
+				email: string;
+			} | null;
+		}
 		// interface Error {}
-		// interface Locals {}
-		// interface PageData {}
 		// interface PageState {}
 		// interface Platform {}
 	}

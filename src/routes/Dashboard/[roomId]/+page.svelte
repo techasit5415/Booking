@@ -279,7 +279,7 @@
 </svelte:head>
 
 <div class="min-h-screen w-screen bg-white text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100 font-['Inter','Prompt',sans-serif] antialiased">
-    <div class="mx-auto flex min-h-screen max-w-400 flex-col gap-10 px-6 py-8 md:px-10 md:py-10">
+    <div class="mx-auto flex min-h-screen max-w-400 flex-col gap-10 px-6 pt-6 pb-8 md:px-10 md:pt-8 md:pb-10">
 
         <!-- ============ HEADER ============ -->
         <header class="flex flex-col gap-4 border-b border-zinc-200 pb-4 dark:border-zinc-800 md:flex-row md:items-end md:justify-between">

@@ -3,8 +3,10 @@
     import PocketBase from 'pocketbase';
     import { env } from '$env/dynamic/public';
     import { goto } from '$app/navigation';
+    import { page } from '$app/state';
 
     const pocketbaseUrl = env.PUBLIC_POCKETBASE_URL || '';
+
     const THEME_KEY = 'theme-mode';
 
     // Hoisted formatters
@@ -20,6 +22,9 @@
         date?: string;
         status: string;
         field: string;
+        bookerName?: string;
+        bookerEmail?: string;
+        booker_email?: string;
     };
 
     // === Security: validate roomId before using in filter ===
@@ -62,7 +67,6 @@
     let startTime = $state<string>('09:00');
     let endTime = $state<string>('10:00');
     let title = $state<string>('');
-    let bookerName = $state<string>('');
     let notes = $state<string>('');
 
     // existing bookings for selected room+date
@@ -173,7 +177,6 @@
         if (!startTime || !endTime) return 'กรุณาเลือกเวลา';
         if (startTime >= endTime) return 'เวลาเริ่มต้องน้อยกว่าเวลาจบ';
         if (!title.trim()) return 'กรุณากรอกหัวข้อการจอง';
-        if (!bookerName.trim()) return 'กรุณากรอกชื่อผู้จอง';
         return null;
     }
 
@@ -234,8 +237,7 @@
 
         submitting = true;
         try {
-            // 🔒 Fetch ใหม่ตอน submit (ไม่พึ่ง cache เก่า) — กัน race condition
-            //    กรณีมีคนอื่นจองซ้อนทับระหว่างที่ user กรอกฟอร์ม
+            // 🔒 Fetch ข้อมูลสดจากหน้าบ้านมาเช็คการจองซ้อนก่อน
             const fresh = await fetchBookingsForRoomDate();
             existingBookings = fresh;
 
@@ -247,29 +249,43 @@
                 return;
             }
 
-            const newStart = toBangkokIso(bookingDate, startTime);
-            const newEnd = toBangkokIso(bookingDate, endTime);
-
-            await pb.collection('bookings').create({
-                field: selectedRoomId,
-                date: bookingDate,
-                start_time: newStart,
-                end_time: newEnd,
-                title: title.trim(),
-                bookerName: bookerName.trim(),
-                detailLabel: notes.trim() || bookerName.trim(),
-                status: 'approved',
+            // ==========================================
+            // 🔥 ปรับเปลี่ยนจุดนี้: ยิงผ่าน API Server Proxy แทนการใช้ PB SDK ตรงๆ
+            // ==========================================
+            const response = await fetch('/api/bookings', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    roomId: selectedRoomId,
+                    date: bookingDate,
+                    startTime: startTime, // ส่งค่า HH:MM ไปให้หลังบ้านย่อยต่อ
+                    endTime: endTime,     // ส่งค่า HH:MM
+                    title: title.trim(),
+                    notes: notes.trim()
+                })
             });
+
+            // ตรวจสอบผลลัพธ์จากหลังบ้าน
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({ message: 'ส่งคำขอไม่สำเร็จ' }));
+                throw new Error(errorData.message || 'เซิร์ฟเวอร์ปฏิเสธการจอง');
+            }
+
+            // ถ้าหลังบ้านตอบกลับมาว่าสำเร็จ
             submitSuccess = true;
+            
             // reset form
             title = '';
             notes = '';
-            bookerName = '';
-            // refetch เพื่อแสดงใน preview
+            
+            // refetch เพื่อแสดงใน preview รายการจองของวันนั้นบนหน้าจอ
             await loadBookingsForSelected();
-        } catch (err) {
+            
+        } catch (err: any) {
             console.error('Submit failed', err);
-            submitError = 'ส่งคำขอไม่สำเร็จ กรุณาลองใหม่อีกครั้ง';
+            submitError = err.message || 'ส่งคำขอไม่สำเร็จ กรุณาลองใหม่อีกครั้ง';
         } finally {
             submitting = false;
         }
@@ -330,9 +346,10 @@
         rel="stylesheet"
     />
 </svelte:head>
-
+<header class="sticky top-0 z-40 border-b border-zinc-200 bg-white/80 backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/80">
+</header>
 <div class="min-h-screen w-screen bg-white text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100 font-['Inter','Prompt',sans-serif] antialiased">
-    <div class="mx-auto flex min-h-screen max-w-400 flex-col gap-8 px-6 py-8 md:px-10 md:py-10">
+    <div class="mx-auto flex min-h-screen max-w-400 flex-col gap-8 px-6 pt-6 pb-8 md:px-10 md:pt-8 md:pb-10">
 
         <!-- ============ HEADER ============ -->
         <header class="flex flex-col gap-6 border-b border-zinc-200 pb-6 dark:border-zinc-800 md:flex-row md:items-end md:justify-between">
@@ -346,6 +363,7 @@
                 </h1>
             </div>
 
+            <!-- Theme toggle (user info แสดงใน layout แล้ว) -->
             <div class="inline-flex items-center self-start rounded-md border border-zinc-200 bg-zinc-50 p-0.5 text-[11px] font-semibold tracking-wider uppercase md:self-auto dark:border-zinc-800 dark:bg-zinc-900">
                 <button
                     type="button"
@@ -506,20 +524,6 @@
                         </div>
 
                         <div class="flex flex-col gap-1.5">
-                            <label for="book-name" class="text-xs font-medium text-zinc-700 dark:text-zinc-300">
-                                ชื่อผู้จอง <span class="text-red-500">*</span>
-                            </label>
-                            <input
-                                id="book-name"
-                                type="text"
-                                bind:value={bookerName}
-                                placeholder="ชื่อ-นามสกุล"
-                                maxlength="100"
-                                class="rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 focus:border-zinc-900 focus:outline-none dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:focus:border-zinc-100"
-                            />
-                        </div>
-
-                        <div class="flex flex-col gap-1.5">
                             <label for="book-notes" class="text-xs font-medium text-zinc-700 dark:text-zinc-300">
                                 รายละเอียดเพิ่มเติม <span class="text-zinc-400">(ไม่บังคับ)</span>
                             </label>
@@ -592,6 +596,14 @@
                                             </span>
                                         </div>
                                         <p class="truncate text-sm font-semibold text-zinc-900 dark:text-zinc-100">{b.title}</p>
+                                        {#if b.bookerName || b.bookerEmail || b.booker_email}
+                                            <p class="flex items-center gap-1 truncate text-xs text-zinc-500 dark:text-zinc-400">
+                                                <svg class="h-3 w-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                                </svg>
+                                                <span class="truncate">{b.bookerName || b.bookerEmail || b.booker_email}</span>
+                                            </p>
+                                        {/if}
                                     </li>
                                 {/each}
                             </ul>
