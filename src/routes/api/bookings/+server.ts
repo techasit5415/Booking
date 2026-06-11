@@ -1,17 +1,12 @@
-/**
- * /api/bookings — server endpoint สำหรับจัดการ bookings
- *
- * ต้อง login ก่อน (ผ่าน pb_auth cookie) — ใช้ชื่อ/อีเมลผู้จองจาก session
- * เขียนลง PocketBase ด้วย admin token (หรือ createRule ของ collection)
- */
-
 import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import PocketBase from 'pocketbase';
 import { env } from '$env/dynamic/private';
 
 const PB_URL = env.POCKETBASE_URL ?? env.PUBLIC_POCKETBASE_URL ?? '';
-const PB_ADMIN_TOKEN = env.POCKETBASE_ADMIN_TOKEN ?? '';
+// ✅ เปลี่ยนมาดึงรหัสผ่านแอดมินตรงเพื่อไขระบบ Superuser ตัวใหม่แทนเหรียญ Token ดิบ
+const USER_ADMIN = env.USER_ADMIN || '';
+const USER_ADMIN_PASSWORD = env.USER_ADMIN_PASSWORD || '';
 
 // === Validation helpers ===
 const SAFE_ID = /^[a-zA-Z0-9_-]{1,64}$/;
@@ -72,30 +67,17 @@ function validateBody(b: any): { ok: true; data: CreateBookingBody } | { ok: fal
     };
 }
 
-/** สร้าง PB client — ใช้ admin token ถ้ามี ไม่งั้นใช้ anonymous (ต้องพึ่ง createRule) */
-function getPb(): PocketBase {
-    if (!PB_URL) {
-        throw new Error('POCKETBASE_URL is not set in .env');
-    }
-    const pb = new PocketBase(PB_URL);
-    pb.autoCancellation(false);
-    if (PB_ADMIN_TOKEN) {
-        pb.authStore.save(PB_ADMIN_TOKEN, null);
-    }
-    return pb;
-}
-
 export const POST: RequestHandler = async ({ request, locals }) => {
     if (!PB_URL) {
         throw error(500, 'Server configuration error');
     }
 
-    // ต้อง login ก่อน — เอาชื่อ/อีเมลจาก session (hook.server.ts ตรวจ cookie ให้แล้ว)
+    // 🔒 ระบบดักสิทธิ์ขั้นต้น: ต้องผ่านด่านการล็อกอินของสถาบันมาก่อนเสมอ
     if (!locals.user) {
         throw error(401, 'กรุณาเข้าสู่ระบบก่อนทำการจอง');
     }
 
-    // Validate body
+    // แกะตรวจสอบฟอร์มข้อมูลที่ยิงมาหน้าเบราว์เซอร์
     const body = await request.json().catch(() => null);
     const result = validateBody(body);
     if (!result.ok) {
@@ -103,27 +85,38 @@ export const POST: RequestHandler = async ({ request, locals }) => {
     }
     const data = result.data;
 
-    const pb = getPb();
+    // ✅ ปรับปรุงโครงสร้างเปิดอินสแตนซ์แยกเดี่ยว ป้องกันสายสัญญาณแชร์ชนกันใน RAM
+    const pb = new PocketBase(PB_URL);
+    pb.autoCancellation(false);
 
+    try {
+        // ✅ ยืนยันตัวตนแอดมินผ่านตาราง _superusers เพื่อ bypass กฎการเขียน 'Admin only' ของ PocketBase
+        await pb.collection('_superusers').authWithPassword(USER_ADMIN, USER_ADMIN_PASSWORD);
+    } catch (adminErr) {
+        console.error('❌ พังตรงล็อกอินแอดมินที่ Endpoint:', adminErr);
+        throw error(500, 'ระบบภายในไม่สามารถเปิดสิทธิ์ผู้ดูแลเพื่อเขียนจองได้');
+    }
+
+    // ตรวจหาห้องประชุม
     try {
         await pb.collection('rooms').getOne(data.roomId);
     } catch {
         throw error(400, 'ไม่พบห้องนี้ในระบบ');
     }
 
-    // Overlap check
+    // จัดวางโครงสร้างคำนวณเวลาเหลื่อมซ้อนทับ (Overlap check)
     const startISO = `${data.date}T${data.startTime}:00+07:00`;
     const endISO = `${data.date}T${data.endTime}:00+07:00`;
     const startMs = Date.parse(startISO);
     const endMs = Date.parse(endISO);
 
+    // ✅ ปรับชุดคำสั่ง Filter ให้คลีน ตัดทิ้งวงเล็บซ้อนที่ระบบ SQL เบื้องหลังแกะค่าพลาดจนพ่น no rows
     const sameDayBookings = await pb.collection('bookings').getFullList({
-        filter: `field = "${data.roomId}" && date = "${data.date}" && (status = "approved" || status = "confirmed" || status = "pending")`,
+        filter: `field = "${data.roomId}" && date = "${data.date}" && status != "cancelled"`,
         sort: 'start_time',
     });
 
     for (const b of sameDayBookings) {
-        if (b.status === 'cancelled') continue;
         const bsMs = Date.parse(String(b.start_time).replace(' ', 'T'));
         const beMs = Date.parse(String(b.end_time).replace(' ', 'T'));
         if (Number.isNaN(bsMs) || Number.isNaN(beMs)) continue;
@@ -132,12 +125,13 @@ export const POST: RequestHandler = async ({ request, locals }) => {
         }
     }
 
-    // ผูก booking กับ user ที่ login (มาจาก PB ผ่าน hook → authRefresh แล้ว แก้ไม่ได้)
+    // รวมข้อมูลรายละเอียดนักศึกษาจริง ๆ ที่ได้แกะผ่านคุกกี้ระบบ
     const bookerName = locals.user.name || locals.user.email;
     const bookerEmail = locals.user.email;
 
     let newBooking;
     try {
+        // บันทึกแถวข้อมูลลงคลัง PocketBase
         newBooking = await pb.collection('bookings').create({
             field: data.roomId,
             date: data.date,
@@ -146,13 +140,15 @@ export const POST: RequestHandler = async ({ request, locals }) => {
             title: data.title,
             bookerName,
             bookerEmail,
-            // ✅ detailLabel คือ "รายละเอียดเพิ่มเติม/notes" ไม่ใช่ชื่อคนจอง
-            detailLabel: data.notes,
+            detailLabel: data.notes || '', // ปล่อยว่างเปล่าได้หากไม่ได้กรอกเพิ่มเติม
             status: 'approved',
         });
     } catch (err: any) {
         console.error('❌ PocketBase Create Failed:', JSON.stringify(err.data, null, 2));
-        throw error(400, `สร้าง Record ไม่สำเร็จ: ${JSON.stringify(err.data?.data || err.message)}`);
+        throw error(400, `สร้าง Record ไม่สำเร็จ: ${err.message}`);
+    } finally {
+        // ✅ เคลียร์สิทธิ์ออกจากหน่วยความจำของคลาสเสมอเพื่อสุขอนามัยของระบบ
+        pb.authStore.clear();
     }
 
     return json({ success: true, booking: newBooking });
