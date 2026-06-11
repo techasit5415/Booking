@@ -119,17 +119,20 @@
         validationError = null;
     }
 
-    async function loadRooms() {
-        if (!pb) return;
-        try {
-            const data = await pb.collection('rooms').getFullList({ sort: 'name' });
-            rooms = data as Room[];
-        } catch (err) {
-            console.error('Failed to load rooms', err);
-        } finally {
-            loadingRooms = false;
-        }
+async function loadRooms() {
+    if (!pb) return;
+    try {
+        // ✅ ส่งประเภท <Room> เข้าไปกำกับในฟังก์ชัน .getFullList เพื่อให้ TypeScript รู้จักฟิลด์ล่วงหน้า
+        const data = await pb.collection('rooms').getFullList<Room>({ 
+            sort: 'name' 
+        });
+        rooms = data; // 🟩 ใส่เข้าตัวแปร rooms ได้โดยตรง ไม่แดงแล้วครับ!
+    } catch (err) {
+        console.error('Failed to load rooms', err);
+    } finally {
+        loadingRooms = false;
     }
+}
 
     async function loadBookingsForSelected() {
         if (!pb || !selectedRoomId || !isValidRoomId(selectedRoomId)) {
