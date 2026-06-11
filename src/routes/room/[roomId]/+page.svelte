@@ -8,6 +8,7 @@
     import UpcomingBookingsList from '$lib/components/UpcomingBookingsList.svelte';
     import QrBookingCard from '$lib/components/QrBookingCard.svelte';
     import { page } from '$app/state';
+    import Topbar from "$lib/components/Topbar.svelte";
 
     type ThemeMode = 'light' | 'dark';
     const THEME_KEY = 'theme-mode';

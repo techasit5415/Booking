@@ -1,9 +1,8 @@
 /**
  * /api/bookings — server endpoint สำหรับจัดการ bookings
  *
- * (login ถูกเอาออกแล้ว — booking ไม่ผูกกับ user)
- * - ใช้ PB admin token เพื่อเขียน (ต้องตั้ง POCKETBASE_ADMIN_TOKEN ใน .env)
- * - หรือถ้า PB collection ตั้ง createRule เปิด → POST ได้ตรง
+ * ต้อง login ก่อน (ผ่าน pb_auth cookie) — ใช้ชื่อ/อีเมลผู้จองจาก session
+ * เขียนลง PocketBase ด้วย admin token (หรือ createRule ของ collection)
  */
 
 import { json, error } from '@sveltejs/kit';
@@ -86,9 +85,14 @@ function getPb(): PocketBase {
     return pb;
 }
 
-export const POST: RequestHandler = async ({ request }) => {
+export const POST: RequestHandler = async ({ request, locals }) => {
     if (!PB_URL) {
         throw error(500, 'Server configuration error');
+    }
+
+    // ต้อง login ก่อน — เอาชื่อ/อีเมลจาก session (hook.server.ts ตรวจ cookie ให้แล้ว)
+    if (!locals.user) {
+        throw error(401, 'กรุณาเข้าสู่ระบบก่อนทำการจอง');
     }
 
     // Validate body
@@ -128,7 +132,10 @@ export const POST: RequestHandler = async ({ request }) => {
         }
     }
 
-    // Create booking (ไม่ผูก user — anonymous)
+    // ผูก booking กับ user ที่ login (มาจาก PB ผ่าน hook → authRefresh แล้ว แก้ไม่ได้)
+    const bookerName = locals.user.name || locals.user.email;
+    const bookerEmail = locals.user.email;
+
     let newBooking;
     try {
         newBooking = await pb.collection('bookings').create({
@@ -137,9 +144,10 @@ export const POST: RequestHandler = async ({ request }) => {
             start_time: startISO,
             end_time: endISO,
             title: data.title,
-            bookerName: 'Guest',
-            bookerEmail: '',
-            detailLabel: data.notes || 'Guest',
+            bookerName,
+            bookerEmail,
+            // ✅ detailLabel คือ "รายละเอียดเพิ่มเติม/notes" ไม่ใช่ชื่อคนจอง
+            detailLabel: data.notes,
             status: 'approved',
         });
     } catch (err: any) {

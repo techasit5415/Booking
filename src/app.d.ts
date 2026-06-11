@@ -1,16 +1,19 @@
 // See https://svelte.dev/docs/kit/types#app.d.ts
 // for information about these interfaces
+type AuthUser = {
+	id: string;
+	email: string;
+	name: string;
+	username?: string;
+};
+
 declare global {
 	namespace App {
 		interface Locals {
-			session: import('$lib/server/auth').Session | null;
+			user?: AuthUser | null;
 		}
 		interface PageData {
-			user?: {
-				userId: string;
-				name: string;
-				email: string;
-			} | null;
+			user?: AuthUser | null;
 		}
 		// interface Error {}
 		// interface PageState {}

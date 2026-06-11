@@ -14,10 +14,11 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
     try {
         const authData = await loginWithKmitlCode(code);
 
-        // สร้างก้อนข้อมูล Cookie รูปแบบมาตรฐานที่ PocketBase หน้าบ้านแกะอ่านได้ทันที
+        // เก็บใน cookie แค่ token + model — hooks.server.ts เอา token ไป verify กับ PB
+        // แล้วดึง user record ของจริง (ไม่เชื่อ model ใน cookie เพราะแก้ได้)
         const cookiePayload = {
             token: authData.token,
-            model: authData.model
+            model: authData.model,
         };
 
         // เซ็ตคุกกี้ชื่อ 'pb_auth' ส่งกลับไปที่เบราว์เซอร์

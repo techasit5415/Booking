@@ -51,13 +51,19 @@ export async function loginWithKmitlCode(code: string) {
 
     // แกะข้อมูลที่จำเป็นไปใช้งาน
     const studentId = userData.email?.split('@')[0] || '';
-    
-    // ✅ ตัวแปร fullName ตอนนี้จะได้ชื่อจริงภาษาไทย/อังกฤษจากสถาบันมาแสดงผลโดยตรงแล้ว
-    const fullName = userData.name || userData.fullname || (studentId ? `นักศึกษา ${studentId}` : 'KMITL User');
-    const username = studentId || 'kmitl_' + Math.random().toString(36).substring(2, 7);
 
-    const isPlaceholder = (n: string | undefined) =>
-        !n || n === 'KMITL User' || n.startsWith('นักศึกษา ');
+    // ✅ สร้าง fullName ให้ถูกต้อง — KMITL ส่ง title + firstname_th + lastname_th มา
+    //    (ไม่ใช่ name/fullname — เคยเขียนผิดจน fallback ไปใช้ studentId ตลอด)
+    const fullName =
+        [userData.title, userData.firstname_th, userData.lastname_th]
+            .filter(Boolean)
+            .join(' ')
+            .trim() ||
+        userData.name ||
+        userData.fullname ||
+        (studentId ? `นักศึกษา ${studentId}` : 'KMITL User');
+
+    const username = studentId || 'kmitl_' + Math.random().toString(36).substring(2, 7);
 
     // 3. เข้าสิทธิ์ซูเปอร์ยูสเซอร์เพื่อไปเคลียร์ข้อมูลลงตาราง PocketBase
     await pbServer.collection('_superusers').authWithPassword(USER_ADMIN, USER_ADMIN_PASSWORD);
@@ -69,8 +75,10 @@ export async function loginWithKmitlCode(code: string) {
         targetUser = await pbServer.collection('users').getFirstListItem(`email="${userData.email}"`);
         console.log('พบผู้ใช้เดิมในระบบ:', targetUser.email);
 
-        // ดักอัปเดต: ถ้าคนเดิมเคยเป็นชื่อ placeholder เก่า แต่รอบนี้ได้ชื่อจริงมาจาก read:profile แล้ว ระบบจะเปลี่ยนชื่อจริงให้ทันที
-        const needsNameUpdate = isPlaceholder(targetUser.name) && targetUser.name !== fullName;
+        // ✅ บังคับ sync ชื่อจาก KMITL ทุกครั้งที่ login
+        //    (เดิมดักเฉพาะ placeholder → user เก่าที่เคยถูกสร้างตอน title=undefined
+        //     จะมีชื่อเป็น "undefined เตชสิทธิ์ ..." ซึ่งไม่ใช่ placeholder → ไม่อัปเดต)
+        const needsNameUpdate = targetUser.name !== fullName;
         const needsTypeUpdate = !targetUser.user_type;
         const updates: Record<string, string> = {};
         if (needsNameUpdate) updates.name = fullName;
@@ -85,8 +93,7 @@ export async function loginWithKmitlCode(code: string) {
         const secureTempPassword = crypto.randomUUID().replace(/-/g, '') + 'Aa1!';
         targetUser = await pbServer.collection('users').create({
             email: userData.email,
-            // รวมร่าง: นายเตชสิทธิ์ วาณิชภัทรกุล
-            name: `${userData.title || ''}${userData.firstname_th} ${userData.lastname_th}`, 
+            name: fullName, // ใช้ fullName ตัวเดียวกับที่ update ใช้
             username: studentId || 'kmitl_' + Math.random().toString(36).substring(2, 7),
             password: secureTempPassword,
             passwordConfirm: secureTempPassword,
@@ -100,13 +107,22 @@ export async function loginWithKmitlCode(code: string) {
     await pbServer.collection('users').impersonate(targetUser.id, 60 * 60 * 24 * 7);
 
     const userToken = pbServer.authStore.token;
-    const userModel = pbServer.authStore.record;
+
+    // 4.5) ✅ ดึงข้อมูล user จาก PB ด้วย superadmin (อยู่ใน authStore ตอนนี้)
+    //    เพื่อให้ cookie ได้ข้อมูลล่าสุดจากฐานข้อมูลจริง (ชื่อที่เพิ่ง update, email, username ฯลฯ)
+    //    ไม่ใช่พึ่ง payload จาก impersonate response ที่อาจไม่ sync
+    const freshUser = await pbServer.collection('users').getOne(targetUser.id);
 
     // 5. ล้างสิทธิ์แอดมินเพื่อความปลอดภัย
     pbServer.authStore.clear();
 
     return {
         token: userToken,
-        model: userModel
+        model: {
+            id: freshUser.id,
+            email: freshUser.email,
+            name: freshUser.name ?? '',
+            username: freshUser.username,
+        },
     };
 }

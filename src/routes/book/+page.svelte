@@ -4,6 +4,7 @@
     import { env } from '$env/dynamic/public';
     import { goto } from '$app/navigation';
     import { page } from '$app/state';
+    import Topbar from '$lib/components/Topbar.svelte';
 
     const pocketbaseUrl = env.PUBLIC_POCKETBASE_URL || '';
 
@@ -346,9 +347,9 @@
         rel="stylesheet"
     />
 </svelte:head>
-<header class="sticky top-0 z-40 border-b border-zinc-200 bg-white/80 backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/80">
-</header>
+
 <div class="min-h-screen w-screen bg-white text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100 font-['Inter','Prompt',sans-serif] antialiased">
+   <Topbar />
     <div class="mx-auto flex min-h-screen max-w-400 flex-col gap-8 px-6 pt-6 pb-8 md:px-10 md:pt-8 md:pb-10">
 
         <!-- ============ HEADER ============ -->
