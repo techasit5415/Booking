@@ -1,4 +1,5 @@
 import { POCKETBASE_URL, USER_ADMIN, USER_ADMIN_PASSWORD, CLIENT_SECRET } from '$env/static/private';
+import { PUBLIC_KMITL_CLIENT_ID, PUBLIC_KMITL_REDIRECT_URI } from '$env/static/public';
 import PocketBase from 'pocketbase';
 
 const pbServer = new PocketBase(POCKETBASE_URL);
@@ -10,10 +11,9 @@ export async function loginWithKmitlCode(code: string) {
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: new URLSearchParams({
             'grant_type': 'authorization_code',
-            'client_id': 'CI0IHz3JNTe7v2SHEr3RkFTdIZgRPFZY.e637637a-5f74-491f-be6e-dfe6e299190c.client.iam.science.kmitl.ac.th',
-            'client_secret': CLIENT_SECRET, 
-            // 'redirect_uri': 'http://localhost:5173/auth/callback',
-            'redirect_uri': 'https://booking.cskmitl.com/auth/callback',
+            'client_id': PUBLIC_KMITL_CLIENT_ID,
+            'client_secret': CLIENT_SECRET,
+            'redirect_uri': PUBLIC_KMITL_REDIRECT_URI,
             'code': code
         })
     });

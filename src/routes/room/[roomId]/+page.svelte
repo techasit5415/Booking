@@ -10,9 +10,6 @@
     import { page } from '$app/state';
     import Topbar from "$lib/components/Topbar.svelte";
 
-    type ThemeMode = 'light' | 'dark';
-    const THEME_KEY = 'theme-mode';
-
     type BookingItem = {
         id: string;
         title: string;
@@ -70,7 +67,7 @@
         },
     ];
 
-    let themeMode = $state<ThemeMode>('dark');
+    let themeMode = $state<'light' | 'dark'>('dark');
     let clockText = $state("");
     let dateText = $state("");
     let qrCodeDataUrl = $state("");
@@ -84,30 +81,9 @@
     let bookingViewState = $state<BookingViewState>("idle");
     let statusLabel = $state("DEMO MODE");
 
-    function getSystemTheme(): ThemeMode {
-        if (typeof window === 'undefined') return 'dark';
-        return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-    }
-    function readStoredTheme(): ThemeMode | null {
-        if (typeof window === 'undefined') return null;
-        const v = localStorage.getItem(THEME_KEY);
-        return v === 'light' || v === 'dark' ? v : null;
-    }
-    function applyTheme(mode: ThemeMode) {
-        if (typeof document === 'undefined') return;
-        document.documentElement.classList.toggle('dark', mode === 'dark');
-    }
-    function setTheme(mode: ThemeMode) {
-        themeMode = mode;
-        applyTheme(mode);
-        if (typeof localStorage !== 'undefined') {
-            localStorage.setItem(THEME_KEY, mode);
-        }
-    }
-
     function updateClock() {
         const now = new Date();
-        clockText = now.toLocaleTimeString("th-TH", { hour12: false });
+        clockText = now.toLocaleTimeString("th-TH", { hour12: false, hourCycle: "h23" });
         dateText = now.toLocaleDateString("th-TH", {
             weekday: "long",
             day: "numeric",
@@ -119,32 +95,35 @@
 
     function updateDerivedState() {
         const now = Date.now();
+        const todayKey = getBangkokDateKey(new Date(now));
 
-        const activeBooking = bookings.find((booking) => {
-            const startEpoch = booking.startEpoch ?? null;
-            const endEpoch = booking.endEpoch ?? null;
+        // ✅ แสดง booking ทุกตัวของ "วันนี้" (Bangkok day) — ทั้งผ่านไปแล้ว/กำลังใช้/กำลังจะมา
+        //    เรียงตาม start time (อดีตก่อน → ปัจจุบัน → อนาคต)
+        const todaysBookings = bookings
+            .filter((b) => {
+                if (!b.startEpoch) return false;
+                if (b.status === "cancelled" || b.status === "pending") return false;
+                return getBangkokDateKey(new Date(b.startEpoch)) === todayKey;
+            })
+            .sort((a, b) => (a.startEpoch ?? 0) - (b.startEpoch ?? 0));
 
-            if (startEpoch === null || endEpoch === null) return false;
-            if (booking.status === "cancelled" || booking.status === "pending")
-                return false;
-
-            return now >= startEpoch && now < endEpoch;
+        const activeBooking = todaysBookings.find((b) => {
+            if (!b.startEpoch || !b.endEpoch) return false;
+            return now >= b.startEpoch && now < b.endEpoch;
         });
 
-        const nextBookings = bookings.filter((booking) => {
-            const startEpoch = booking.startEpoch ?? null;
-
-            if (startEpoch === null) return false;
-            if (booking.status === "cancelled" || booking.status === "pending")
-                return false;
-
-            const oneDayInMs = 24 * 60 * 60 * 1000;
-            return startEpoch > now && startEpoch - now < oneDayInMs;
+        // upcoming = ที่ยังไม่จบ (รวม current) — เพื่อโชว์ใน list
+        const nextBookings = todaysBookings.filter((b) => {
+            if (!b.endEpoch) return false;
+            return b.endEpoch > now;
         });
 
         bookingViewState = activeBooking ? "active" : "idle";
 
-        currentBooking = activeBooking ?? {
+        // Active card: ใช้ current ถ้ามี → ไม่งั้นใช้ next upcoming → ไม่งั้น "ว่าง"
+        const displayBooking = activeBooking ?? nextBookings[0] ?? todaysBookings[todaysBookings.length - 1];
+
+        currentBooking = displayBooking ?? {
             id: "empty",
             title: "ว่าง",
             detailLabel: "-",
@@ -156,11 +135,11 @@
 
         upcomingBookings = nextBookings;
 
-        if (currentBooking.id === "empty") {
+        if (currentBooking.id === "empty" || !currentBooking.startEpoch) {
             progressPercent = 0;
             progressNote = "ห้องว่าง";
         } else {
-            const start = currentBooking.startEpoch ?? now;
+            const start = currentBooking.startEpoch;
             const end = currentBooking.endEpoch ?? now;
 
             if (end > start) {
@@ -172,8 +151,10 @@
                     const hoursLeft = Math.floor(minsLeft / 60);
                     const remMins = minsLeft % 60;
                     progressNote = `เหลืออีก ${hoursLeft} ชม. ${remMins} นาที`;
-                } else {
+                } else if (minsLeft > 0) {
                     progressNote = `เหลืออีก ${minsLeft} นาที`;
+                } else {
+                    progressNote = "กำลังจะเริ่ม";
                 }
             } else {
                 progressPercent = 0;
@@ -237,6 +218,7 @@
             hour: "2-digit",
             minute: "2-digit",
             hour12: false,
+            hourCycle: "h23",
         });
     }
 
@@ -254,6 +236,7 @@
             bookingDetail ||
             expandedFieldName ||
             String(record.field ?? "Unknown room");
+        // Public endpoint strip PII → bookerName/bookerEmail/booker_id อาจไม่มี
         const bookerName = String(record.bookerName ?? "").trim();
         const bookerEmail = String(record.bookerEmail ?? record.booker_email ?? "").trim();
         const startRaw = String(record.start_time ?? "");
@@ -283,22 +266,7 @@
     }
 
     onMount(() => {
-        // 1. Init theme (sync กับ Dashboard ผ่าน localStorage)
-        const stored = readStoredTheme();
-        const initial = stored ?? getSystemTheme();
-        themeMode = initial;
-        applyTheme(initial);
-
-        const mql = window.matchMedia('(prefers-color-scheme: dark)');
-        const onSystemChange = (e: MediaQueryListEvent) => {
-            if (readStoredTheme() === null) {
-                themeMode = e.matches ? 'dark' : 'light';
-                applyTheme(themeMode);
-            }
-        };
-        mql.addEventListener('change', onSystemChange);
-
-        // 2. Clock
+        // 1. Clock
         updateClock();
         const clockTimer = window.setInterval(updateClock, 1000);
         let destroyed = false;
@@ -333,71 +301,54 @@
             }
             const safeRoomId = escapeFilterValue(currentRoomId);
 
+            // ✅ โหลด room info ผ่าน PocketBase (rooms listRule เป็น public)
             try {
                 pb = new PocketBase(pocketbaseUrl);
-
-                // 1. โหลดข้อมูลห้อง
-                try {
-                    const room = await pb.collection("rooms").getOne(safeRoomId);
-                    if (!destroyed) {
-                        const mappedRoom = mapRoom(room);
-                        roomName = mappedRoom.name;
-                        roomLocation = mappedRoom.location;
-                    }
-                } catch (err) {
-                    console.error(
-                        `หาห้องไอดี ${currentRoomId} ไม่เจอในระบบ`,
-                        err,
-                    );
-                }
-
-                // 2. ดึงตารางจอง (filter ใช้ safeRoomId)
-                const records = await pb.collection("bookings").getFullList({
-                    filter: `field = "${safeRoomId}"`,
-                    sort: "start_time",
-                    expand: "field",
-                });
-
+                const room = await pb.collection("rooms").getOne(safeRoomId);
                 if (!destroyed) {
-                    bookings = records.map((rec) =>
+                    const mappedRoom = mapRoom(room);
+                    roomName = mappedRoom.name;
+                    roomLocation = mappedRoom.location;
+                }
+            } catch (err) {
+                console.error(
+                    `หาห้องไอดี ${currentRoomId} ไม่เจอในระบบ`,
+                    err,
+                );
+            }
+
+            // ✅ โหลด bookings ผ่าน public endpoint (ไม่ต้อง login — Pi ใช้)
+            // ใช้ polling แทน realtime subscription เพราะ Pi ไม่ auth
+            const POLL_INTERVAL_MS = 15_000;
+            let pollTimer: number | null = null;
+
+            async function fetchAndSetBookings() {
+                if (destroyed) return;
+                try {
+                    const res = await fetch(`/api/rooms/${safeRoomId}/bookings`);
+                    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                    const data = await res.json();
+                    if (destroyed) return;
+                    bookings = (data.bookings ?? []).map((rec: any) =>
                         mapRecord(rec as BookingRecord),
                     );
                     statusLabel = "LIVE";
-                    await generateQrCode();
-                }
-
-                // 3. Subscribe room updates
-                await pb.collection("rooms").subscribe(safeRoomId, async (e) => {
-                    if (destroyed) return;
-                    const mappedRoom = mapRoom(e.record);
-                    roomName = mappedRoom.name;
-                    roomLocation = mappedRoom.location;
-                    await generateQrCode();
-                });
-
-                // 4. Subscribe bookings
-                await pb.collection("bookings").subscribe("*", async () => {
-                    if (destroyed || !pb) return;
-                    const nextRecords = await pb
-                        .collection("bookings")
-                        .getFullList({
-                            filter: `field = "${safeRoomId}"`,
-                            sort: "start_time",
-                            expand: "field",
-                        });
-                    bookings = nextRecords.map((rec) =>
-                        mapRecord(rec as BookingRecord),
-                    );
                     updateDerivedState();
-                });
-            } catch (error) {
-                console.error("PocketBase connection error:", error);
-                if (!destroyed) {
-                    statusLabel = "OFFLINE";
-                    bookings = sampleBookings;
                     await generateQrCode();
+                } catch (err) {
+                    console.error("[room] fetch bookings failed:", err);
+                    if (!destroyed) {
+                        statusLabel = "OFFLINE";
+                        bookings = sampleBookings;
+                    }
                 }
             }
+
+            await fetchAndSetBookings();
+            pollTimer = window.setInterval(fetchAndSetBookings, POLL_INTERVAL_MS);
+
+            // store timer เพื่อ cleanup
+            (window as any).__roomPollTimer = pollTimer;
         }
 
         void initRealtimeSystem();
@@ -405,12 +356,10 @@
         return () => {
             destroyed = true;
             window.clearInterval(clockTimer);
-            mql.removeEventListener('change', onSystemChange);
-            if (pb) {
-                if (isValidRoomId(currentRoomId)) {
-                    pb.collection("rooms").unsubscribe(currentRoomId);
-                }
-                pb.collection("bookings").unsubscribe("*");
+            const t = (window as any).__roomPollTimer;
+            if (t) {
+                window.clearInterval(t);
+                (window as any).__roomPollTimer = null;
             }
         };
     });
@@ -444,7 +393,7 @@
         />
 
         <!-- 2. Main grid -->
-        <main class="grid flex-1 min-h-0 gap-2 grid-cols-1 grid-cols-[1.6fr_0.7fr]">
+        <main class="grid flex-1 min-h-0 gap-2 grid-cols-1 md:grid-cols-[1.6fr_0.7fr]">
 
             <!-- Left column -->
             <div class="flex flex-col gap-2 min-h-0">

@@ -1,5 +1,6 @@
 <script lang="ts">
   import { page } from '$app/state';
+  import { PUBLIC_KMITL_CLIENT_ID, PUBLIC_KMITL_REDIRECT_URI } from '$env/static/public';
 
   // ดึง error message จาก query param (?error=...) ถ้ามี
   const errorMessage = page.url.searchParams.get('error');
@@ -9,13 +10,11 @@
     // โดเมนที่ถูกต้องตามคู่มือแผ่นที่ 1 คือ portal.science.kmitl.ac.th
     const url = new URL('https://portal.science.kmitl.ac.th/o/oauth2/auth');
 
-    // 1. ตรวจสอบ Client ID ตัวยาวๆ ของคุณ (ก๊อปปี้จากก้อน Payload รอบที่แล้วมาวางให้ครบ)
-    url.searchParams.set('client_id', 'CI0IHz3JNTe7v2SHEr3RkFTdIZgRPFZY.e637637a-5f74-491f-be6e-dfe6e299190c.client.iam.science.kmitl.ac.th');
+    // 1. Client ID ตัวยาวๆ (อ่านจาก PUBLIC_KMITL_CLIENT_ID ใน .env)
+    url.searchParams.set('client_id', PUBLIC_KMITL_CLIENT_ID);
 
     // 2. ลิงก์จุดนัดพบที่วิ่งกลับมาหาหลังบ้านเรา (ต้องตรงกับที่ลงทะเบียนไว้ในแดชบอร์ดสถาบัน)
-    // url.searchParams.set('redirect_uri', 'https://db.cskmitl.com/auth/callback');
-    // url.searchParams.set('redirect_uri', 'http://localhost:5173/auth/callback');
-    url.searchParams.set('redirect_uri', 'https://booking.cskmitl.com/auth/callback');
+    url.searchParams.set('redirect_uri', PUBLIC_KMITL_REDIRECT_URI);
     // 3. กำหนดค่าพารามิเตอร์อื่นๆ ตามมาตรฐาน
     url.searchParams.set('response_type', 'code');
     // OAuth scope

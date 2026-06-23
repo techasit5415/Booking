@@ -1,45 +1,52 @@
 <script lang="ts">
-    let { qrCodeDataUrl = '' } = $props();
+	import * as Card from '$lib/components/ui/card';
+	import { QrCode } from '@lucide/svelte';
+
+	let { qrCodeDataUrl = '' } = $props();
 </script>
 
 <div class="flex flex-col gap-2">
-    <!-- QR Card -->
-    <article class="flex flex-col items-center gap-1 rounded-lg border border-zinc-400 bg-black p-1 text-center dark:border-zinc-800 dark:bg-zinc-950">
-        <div class="flex flex-col gap-1">
-            <h3 class="text-xl font-bold tracking-tight text-white dark:text-zinc-50">
-                ต้องการจองห้องนี้?
-            </h3>
-            <p class="text-xs text-zinc-300">
-                สแกน QR code เพื่อเปิดหน้าจอง
-            </p>
-        </div>
+	<!-- QR Card -->
+	<Card.Root class="bg-foreground text-background gap-1 border-2 p-4 text-center">
+		<Card.Header class="flex flex-col gap-1 p-0">
+			<Card.Title class="text-background text-xl font-bold tracking-tight">
+				ต้องการจองห้องนี้?
+			</Card.Title>
+			<Card.Description class="text-background/70 text-xs">
+				สแกน QR code เพื่อเปิดหน้าจอง
+			</Card.Description>
+		</Card.Header>
 
-        <div class="rounded-md border border-zinc-200 bg-black p-1 dark:border-zinc-800">
-            {#if qrCodeDataUrl}
-                <img
-                    class="h-10 w-30 md:h-44 md:w-44 object-contain"
-                    src={qrCodeDataUrl}
-                    alt="QR code สำหรับจองห้อง"
-                />
-            {:else}
-                <div class="grid h-10 w-30 md:h-44 md:w-44 place-items-center text-sm font-semibold text-white dark:text-zinc-500">
-                    Loading...
-                </div>
-            {/if}
-        </div>
+		<Card.Content class="bg-background mx-auto rounded-md border p-1">
+			{#if qrCodeDataUrl}
+				<img
+					class="h-44 w-44 object-contain"
+					src={qrCodeDataUrl}
+					alt="QR code สำหรับจองห้อง"
+				/>
+			{:else}
+				<div class="text-muted-foreground grid h-44 w-44 place-items-center text-sm font-semibold">
+					<QrCode class="h-12 w-12 animate-pulse" />
+				</div>
+			{/if}
+		</Card.Content>
 
-        <div class="text-[10px] font-semibold tracking-[0.2em] text-zinc-500 uppercase ">
-            Scan to book
-        </div>
-    </article>
+		<Card.Footer class="justify-center p-0">
+			<div class="text-[10px] font-semibold tracking-[0.2em] uppercase opacity-70">
+				Scan to book
+			</div>
+		</Card.Footer>
+	</Card.Root>
 
-    <!-- Tips -->
-    <article class="flex flex-col gap-0.5 rounded-lg border border-zinc-400 bg-black p-1 dark:border-zinc-800 dark:bg-zinc-900/40 ">
-        <h4 class="text-sm font-semibold tracking-[0.15em] text-white uppercase dark:text-zinc-300 ml-1">
-             ข้อแนะนำ
-        </h4>
-        <p class="text-xs leading-relaxed text-zinc-300 dark:text-zinc-400 ">
-            ถ้าประชุมเสร็จก่อนกำหนด ให้กดคืนห้องในระบบ เพื่อให้คนอื่นใช้งานต่อได้ทันที
-        </p>
-    </article>
+	<!-- Tips -->
+	<Card.Root class="bg-foreground text-background gap-0.5 border-2 p-3">
+		<Card.Header class="p-0">
+			<Card.Title class="text-background text-sm font-semibold tracking-[0.15em] uppercase">
+				ข้อแนะนำ
+			</Card.Title>
+		</Card.Header>
+		<Card.Content class="text-background/70 p-0 text-xs leading-relaxed">
+			ถ้าประชุมเสร็จก่อนกำหนด ให้กดคืนห้องในระบบ เพื่อให้คนอื่นใช้งานต่อได้ทันที
+		</Card.Content>
+	</Card.Root>
 </div>

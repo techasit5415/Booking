@@ -37,4 +37,5 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
     }
 
     throw redirect(302, '/book');
+    
 };

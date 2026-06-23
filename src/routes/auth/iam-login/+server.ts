@@ -15,7 +15,7 @@
 import { redirect, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import crypto from 'node:crypto';
-import { env } from '$env/dynamic/private';
+import { PUBLIC_KMITL_CLIENT_ID, PUBLIC_IAM_REDIRECT_URI } from '$env/static/public';
 
 const IAM_AUTH_URL = 'https://portal.science.kmitl.ac.th/o/oauth2/auth';
 const SCOPE = 'read:userinfo';
@@ -44,12 +44,11 @@ function tempCookieOptions() {
 }
 
 export const GET: RequestHandler = async ({ url, cookies }) => {
-    const clientId = env.IAM_CLIENT_ID;
-    // const redirectUri = env.IAM_REDIRECT_URI ?? 'http://localhost:5173/auth/iam-callback';
-    const redirectUri = env.IAM_REDIRECT_URI ?? 'https://booking.cskmitl.com/auth/iam-callback';
+    const clientId = PUBLIC_KMITL_CLIENT_ID;
+    const redirectUri = PUBLIC_IAM_REDIRECT_URI;
 
     if (!clientId) {
-        throw error(500, 'IAM_CLIENT_ID is not set in .env');
+        throw error(500, 'PUBLIC_KMITL_CLIENT_ID is not set in .env');
     }
 
     const next = safeNextPath(url.searchParams.get('next'));
