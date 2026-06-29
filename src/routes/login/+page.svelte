@@ -1,63 +1,96 @@
 <script lang="ts">
-  import { page } from '$app/state';
-  import { PUBLIC_KMITL_CLIENT_ID, PUBLIC_KMITL_REDIRECT_URI } from '$env/static/public';
+	import { page } from '$app/state';
+	import { PUBLIC_KMITL_CLIENT_ID, PUBLIC_KMITL_REDIRECT_URI } from '$env/static/public';
+	import { AlertCircle, LogIn, CalendarRange } from '@lucide/svelte';
+	import { fade } from 'svelte/transition';
 
-  // ดึง error message จาก query param (?error=...) ถ้ามี
-  const errorMessage = page.url.searchParams.get('error');
+	const errorMessage = page.url.searchParams.get('error');
 
-  function redirectToKmitl() {
-    // ❌ จุดผิดที่ทำให้เกิด 400: ห้ามใส่คำว่า /login ต่อท้าย URL เด็ดขาด
-    // โดเมนที่ถูกต้องตามคู่มือแผ่นที่ 1 คือ portal.science.kmitl.ac.th
-    const url = new URL('https://portal.science.kmitl.ac.th/o/oauth2/auth');
-
-    // 1. Client ID ตัวยาวๆ (อ่านจาก PUBLIC_KMITL_CLIENT_ID ใน .env)
-    url.searchParams.set('client_id', PUBLIC_KMITL_CLIENT_ID);
-
-    // 2. ลิงก์จุดนัดพบที่วิ่งกลับมาหาหลังบ้านเรา (ต้องตรงกับที่ลงทะเบียนไว้ในแดชบอร์ดสถาบัน)
-    url.searchParams.set('redirect_uri', PUBLIC_KMITL_REDIRECT_URI);
-    // 3. กำหนดค่าพารามิเตอร์อื่นๆ ตามมาตรฐาน
-    url.searchParams.set('response_type', 'code');
-    // OAuth scope
-    // - read:userinfo  → id, email, role (ใช้งานได้)
-    // - read:profile   → title, firstname_th, lastname_th ฯลฯ (ชั่วคราวปิดไว้ก่อน
-    //                    เพราะ KMITL auth server ตอบ 400 + body stream already read
-    //                    ต้องเช็ค KMITL admin ว่าลงทะเบียน scope นี้หรือยัง)
-    url.searchParams.set('scope', 'read:userinfo,read:profile');
-    url.searchParams.set('state', 'any-random-string-123');
-
-    // สั่งย้ายหน้าจอ
-    window.location.href = url.toString();
-  }
+	function redirectToKmitl() {
+		const url = new URL('https://portal.science.kmitl.ac.th/o/oauth2/auth');
+		url.searchParams.set('client_id', PUBLIC_KMITL_CLIENT_ID);
+		url.searchParams.set('redirect_uri', PUBLIC_KMITL_REDIRECT_URI);
+		url.searchParams.set('response_type', 'code');
+		url.searchParams.set('scope', 'read:userinfo,read:profile');
+		url.searchParams.set('state', 'any-random-string-123');
+		window.location.href = url.toString();
+	}
 </script>
 
-<div class="min-h-screen flex items-center justify-center bg-linear-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 p-4">
-  <div class="w-full max-w-md bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 space-y-6">
-    <div class="text-center space-y-2">
-      <h1 class="text-3xl font-bold text-gray-900 dark:text-white">ยินดีต้อนรับ</h1>
-      <p class="text-gray-600 dark:text-gray-400">ระบบจองห้องเรียน คณะวิทยาศาสตร์ สจล.</p>
-    </div>
+<svelte:head>
+	<title>เข้าสู่ระบบ | Booking KMITL</title>
+</svelte:head>
 
-    {#if errorMessage}
-      <div role="alert" class="alert alert-error">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-        <span>{errorMessage}</span>
-      </div>
-    {/if}
+<div
+	class="flex min-h-screen w-screen items-center justify-center bg-slate-50 dark:bg-zinc-950 font-['Inter','Prompt',sans-serif] antialiased transition-colors duration-300"
+>
+	<!-- Simple Clean Card Container -->
+	<div
+		class="w-full max-w-md p-4"
+		in:fade={{ duration: 250 }}
+	>
+		<div
+			class="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 rounded-xl p-8 shadow-sm"
+		>
+			<!-- Simple Header -->
+			<div class="flex flex-col items-center space-y-4 text-center">
+				<div
+					class="flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400"
+				>
+					<CalendarRange class="h-6 w-6" />
+				</div>
 
-    <button
-      onclick={redirectToKmitl}
-      class="w-full flex items-center justify-center gap-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-6 rounded-xl transition-colors duration-200 shadow-md hover:shadow-lg"
-    >
-      <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-        <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
-      </svg>
-      Sign in with KMITL Account
-    </button>
+				<div class="space-y-1">
+					<h1 class="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
+						เข้าสู่ระบบจองห้องเรียน
+					</h1>
+					<p class="text-zinc-500 dark:text-zinc-400 text-sm">
+						คณะวิทยาศาสตร์ สจล.
+					</p>
+				</div>
+			</div>
 
-    <p class="text-xs text-center text-gray-500 dark:text-gray-400">
-      ล็อกอินด้วยบัญชี KMITL ของท่าน (@kmitl.ac.th)
-    </p>
-  </div>
+			<!-- Error State -->
+			{#if errorMessage}
+				<div
+					class="border-red-200 dark:border-red-900/30 bg-red-50 dark:bg-red-950/20 text-red-600 dark:text-red-400 mt-6 flex items-start gap-3 rounded-lg border p-4 text-sm"
+					in:fade={{ duration: 150 }}
+				>
+					<AlertCircle class="mt-0.5 h-4 w-4 shrink-0" />
+					<div>
+						<div class="font-semibold">ข้อผิดพลาดในการเข้าสู่ระบบ</div>
+						<div class="text-xs mt-0.5 opacity-90">{errorMessage}</div>
+					</div>
+				</div>
+			{/if}
+
+			<!-- Actions -->
+			<div class="mt-8 space-y-6">
+				<button
+					onclick={redirectToKmitl}
+					class="flex w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white py-3 text-sm font-semibold transition-colors duration-200 shadow-sm"
+				>
+					<LogIn class="h-4 w-4" />
+					ลงชื่อเข้าใช้งานด้วย KMITL Account
+				</button>
+
+				<div class="relative flex py-1 items-center">
+					<div class="flex-grow border-t border-zinc-200 dark:border-zinc-800"></div>
+					<span class="mx-4 flex-shrink text-zinc-400 text-[10px] tracking-wider uppercase font-medium">
+						บัญชีผู้ใช้งาน
+					</span>
+					<div class="flex-grow border-t border-zinc-200 dark:border-zinc-800"></div>
+				</div>
+
+				<p class="text-zinc-400 dark:text-zinc-500 text-center text-xs leading-relaxed">
+					สำหรับบุคลากรและนักศึกษา คณะวิทยาศาสตร์ สจล. <br />
+					โปรดใช้บัญชีอีเมล <span class="font-mono text-zinc-600 dark:text-zinc-400">@kmitl.ac.th</span> ในการเข้าใช้ระบบ
+				</p>
+			</div>
+		</div>
+	</div>
 </div>
+
+<style>
+	@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Prompt:wght@300;400;500;600;700&display=swap');
+</style>

@@ -1,119 +1,158 @@
 <script lang="ts">
-	import { Clock, Users } from '@lucide/svelte';
+	import { Clock, Users, ShieldAlert, CheckCircle2 } from '@lucide/svelte';
 	import * as Card from '$lib/components/ui/card';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Progress } from '$lib/components/ui/progress';
 	import { cn } from '$lib/utils';
+	import type { BookingItem } from '$lib/types';
+
+	interface Props {
+		bookingViewState?: 'active' | 'idle';
+		currentBooking?: BookingItem | {
+			id: string;
+			title: string;
+			startTime: string;
+			endTime: string;
+			detailLabel: string;
+			bookerName: string;
+			bookerEmail?: string;
+			booker_email?: string;
+			status: string;
+		};
+		progressNote?: string;
+		progressPercent?: number;
+	}
 
 	let {
 		bookingViewState = 'idle',
 		currentBooking = {
-			title: '',
+			id: 'empty',
+			title: 'ว่าง',
 			startTime: '',
 			endTime: '',
-			detailLabel: '',
-			bookerName: '',
-			bookerEmail: '',
-			booker_email: '',
-			status: ''
+			detailLabel: '-',
+			bookerName: '-',
+			status: 'cancelled'
 		},
 		progressNote = '',
 		progressPercent = 0
-	} = $props();
+	}: Props = $props();
 
-	// ชื่อคนจอง — fallback email ถ้าชื่อว่าง
 	const displayBooker = $derived(
 		currentBooking.bookerName || currentBooking.bookerEmail || currentBooking.booker_email || '-'
 	);
 
 	type Variant = 'default' | 'success' | 'warning' | 'destructive';
 
-	const variantClass = $derived.by<{
+	// Compute simple color-based variables (no glows)
+	const themeStyles = $derived.by<{
 		card: string;
-		bar: string;
-		badge: Variant;
+		leftBorder: string;
+		badgeVariant: Variant;
+		dotColor: string;
+		progressBarColor: string;
 	}>(() => {
 		if (bookingViewState === 'idle') {
 			return {
-				card: 'border-emerald-500/30 bg-gradient-to-br from-emerald-950/40 via-background to-background',
-				bar: 'bg-gradient-to-b from-emerald-400 via-lime-500 to-emerald-900',
-				badge: 'success'
+				card: 'border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900',
+				leftBorder: 'bg-emerald-500',
+				badgeVariant: 'success',
+				dotColor: 'bg-emerald-500',
+				progressBarColor: 'bg-emerald-500',
 			};
 		}
 		if (currentBooking.status === 'pending') {
 			return {
-				card: 'border-amber-500/30 bg-gradient-to-br from-amber-950/40 via-background to-background',
-				bar: 'bg-gradient-to-b from-amber-400 via-orange-500 to-amber-900',
-				badge: 'warning'
+				card: 'border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900',
+				leftBorder: 'bg-amber-500',
+				badgeVariant: 'warning',
+				dotColor: 'bg-amber-500',
+				progressBarColor: 'bg-amber-500',
 			};
 		}
+		// Active & occupied
 		return {
-			card: 'border-red-500/30 bg-gradient-to-br from-red-950/40 via-background to-background',
-			bar: 'bg-gradient-to-b from-red-500 via-orange-500 to-red-900',
-			badge: 'destructive'
+			card: 'border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900',
+			leftBorder: 'bg-rose-500',
+			badgeVariant: 'destructive',
+			dotColor: 'bg-rose-500',
+			progressBarColor: 'bg-rose-500',
 		};
 	});
 
 	const statusLabel = $derived(
 		bookingViewState === 'idle'
-			? 'ว่าง'
+			? 'ว่าง (Available)'
 			: currentBooking.status === 'pending'
-				? 'รออนุมัติ'
-				: 'กำลังใช้งาน'
+				? 'รออนุมัติ (Pending)'
+				: 'กำลังใช้งาน (Occupied)'
 	);
 </script>
 
 <Card.Root
 	class={cn(
-		'relative min-h-10 overflow-hidden gap-1 border p-3.5 shadow-2xl',
-		variantClass.card
+		'relative min-h-[160px] overflow-hidden border p-6 shadow-xs rounded-xl flex flex-col justify-between transition-colors duration-300',
+		themeStyles.card
 	)}
 >
-	<!-- แถบสีสถานะ (left bar) -->
-	<div class={cn('absolute inset-y-0 left-0 w-1', variantClass.bar)} aria-hidden="true"></div>
+	<!-- Status left vertical stripe (solid color, no shadow) -->
+	<div class={cn('absolute inset-y-0 left-0 w-1.5 transition-colors duration-300', themeStyles.leftBorder)} aria-hidden="true"></div>
 
-	<Card.Header class="flex flex-col gap-1 p-0">
-		<div class="flex flex-col gap-1">
-			<Badge variant={variantClass.badge} class="w-fit gap-1 px-3 py-1.5 text-[11px]">
-				<span
-					class={cn(
-						'h-1.5 w-1.5 rounded-full',
-						bookingViewState === 'idle'
-							? 'bg-emerald-500'
-							: currentBooking.status === 'pending'
-								? 'bg-amber-500'
-								: 'bg-red-500'
-					)}
-				></span>
+	<Card.Header class="p-0 space-y-4">
+		<div class="flex flex-wrap items-center justify-between gap-3">
+			<Badge variant={themeStyles.badgeVariant} class="w-fit gap-1.5 px-2.5 py-0.5 text-[9px] font-bold tracking-wider uppercase rounded">
+				<span class={cn('h-1.5 w-1.5 rounded-full transition-colors duration-350', themeStyles.dotColor)}></span>
 				{statusLabel}
 			</Badge>
 
-			<div>
-				<h2 class="mt-1.5 text-2xl leading-tight font-bold tracking-tight md:text-4xl">
+			{#if bookingViewState !== 'idle'}
+				<span class="font-mono text-xs font-bold text-zinc-650 dark:text-zinc-400 bg-zinc-50 dark:bg-zinc-850 border border-zinc-200 dark:border-zinc-800 px-2 py-0.5 rounded">
+					{currentBooking.startTime} - {currentBooking.endTime}
+				</span>
+			{/if}
+		</div>
+
+		<div class="space-y-2">
+			<h2 class="text-2xl md:text-3xl leading-tight font-bold tracking-tight text-zinc-900 dark:text-zinc-50 font-['Prompt','Inter',sans-serif]">
+				{#if bookingViewState === 'idle'}
+					<span class="text-emerald-600 dark:text-emerald-500 font-bold">ว่าง</span>
+				{:else}
 					{currentBooking.title}
-					<span class="text-muted-foreground ml-9 text-2xl font-medium">
-						({currentBooking.startTime} - {currentBooking.endTime})
-					</span>
-				</h2>
-				{#if bookingViewState !== 'idle'}
-					<p class="text-muted-foreground mt-0.5 flex items-center gap-1.5 text-sm">
-						<Clock class="h-3.5 w-3.5" />
-						{currentBooking.detailLabel}
-					</p>
-					<p class="text-muted-foreground mt-0.5 flex items-center gap-1.5 text-sm">
-						<Users class="h-3.5 w-3.5" />
-						{displayBooker}
-					</p>
 				{/if}
-			</div>
+			</h2>
+
+			{#if bookingViewState !== 'idle'}
+				<div class="flex flex-wrap gap-x-5 gap-y-1 pt-0.5">
+					<div class="text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5 text-xs md:text-sm font-medium">
+						<Clock class="h-3.5 w-3.5" />
+						<span>{currentBooking.detailLabel}</span>
+					</div>
+					<div class="text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5 text-xs md:text-sm font-medium">
+						<Users class="h-3.5 w-3.5" />
+						<span>{displayBooker}</span>
+					</div>
+				</div>
+			{/if}
 		</div>
 	</Card.Header>
 
-	<Card.Content class="flex flex-col gap-1 p-0">
-		<div class="text-muted-foreground flex items-center justify-between text-xs font-medium">
-			<span>{progressNote}</span>
-			<span class="text-foreground font-mono tabular-nums">{progressPercent}%</span>
+	<Card.Content class="p-0 pt-4 space-y-1.5">
+		<div class="text-zinc-500 dark:text-zinc-400 flex items-center justify-between text-[10px] font-bold uppercase tracking-wider">
+			<span class="flex items-center gap-1">
+				{#if bookingViewState === 'idle'}
+					<CheckCircle2 class="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-500" />
+				{:else}
+					<ShieldAlert class="h-3.5 w-3.5 text-zinc-400" />
+				{/if}
+				{progressNote}
+			</span>
+			<span class="text-zinc-700 dark:text-zinc-300 font-mono tabular-nums">{progressPercent}%</span>
 		</div>
-		<Progress value={progressPercent} max={100} class="h-1" />
+		<div class="relative w-full bg-zinc-100 dark:bg-zinc-950 rounded-full h-1.5 overflow-hidden border border-zinc-200 dark:border-zinc-800/40">
+			<div
+				class={cn("h-full rounded-full transition-all duration-300", themeStyles.progressBarColor)}
+				style="width: {progressPercent}%"
+			></div>
+		</div>
 	</Card.Content>
 </Card.Root>

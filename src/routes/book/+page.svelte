@@ -5,6 +5,8 @@
 	import { goto } from '$app/navigation';
 	import Topbar from '$lib/components/Topbar.svelte';
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
+	import type { Room, Booking } from '$lib/types';
+	import { fade } from 'svelte/transition';
 
 	import * as Card from '$lib/components/ui/card';
 	import { Input } from '$lib/components/ui/input';
@@ -23,7 +25,11 @@
 		FileText,
 		CalendarPlus,
 		AlertCircle,
-		Lightbulb
+		Lightbulb,
+		MapPin,
+		Calendar,
+		Clock,
+		Check
 	} from '@lucide/svelte';
 	import { cn } from '$lib/utils';
 	import { authenticatePbFromCookie } from '$lib/pocketbase';
@@ -32,21 +38,6 @@
 
 	// Hoisted formatters
 	const BANGKOK_DATE_FORMAT = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Bangkok' });
-
-	type Room = { id: string; name: string; location?: string };
-	type Booking = {
-		id: string;
-		title: string;
-		start_time: string;
-		end_time: string;
-		date?: string;
-		status: string;
-		field: string;
-		bookerName?: string;
-		bookerEmail?: string;
-		booker_email?: string;
-		detailLabel?: string;
-	};
 
 	// === Security: validate roomId before using in filter ===
 	const SAFE_ID_PATTERN = /^[a-zA-Z0-9_-]{1,64}$/;
@@ -87,16 +78,14 @@
 	let pb: PocketBase | null = null;
 
 	function getTodayDate(): string {
-		// ใช้วันที่ Bangkok เพื่อให้ตรงกับ booking ที่เก็บในระบบ
 		return BANGKOK_DATE_FORMAT.format(new Date());
 	}
 
 	function toBangkokIso(dateStr: string, hhmm: string): string {
-		// dateStr = "YYYY-MM-DD", hhmm = "HH:MM"
 		return `${dateStr}T${hhmm}:00+07:00`;
 	}
 
-	/** format เวลาให้แสดงเป็น HH:MM (Bangkok) — รับได้ทั้ง ISO, UTC, Bangkok */
+	/** format เวลาให้แสดงเป็น HH:MM (Bangkok) */
 	function formatDisplayTime(value: string): string {
 		try {
 			return new Intl.DateTimeFormat('en-GB', {
@@ -166,10 +155,10 @@
 	});
 
 	function validateForm(): string | null {
-		if (!selectedRoomId) return 'กรุณาเลือกห้อง';
+		if (!selectedRoomId) return 'กรุณาเลือกห้องประชุม';
 		if (!isValidRoomId(selectedRoomId)) return 'รหัสห้องไม่ถูกต้อง';
-		if (!bookingDate) return 'กรุณาเลือกวันที่';
-		if (!startTime || !endTime) return 'กรุณาเลือกเวลา';
+		if (!bookingDate) return 'กรุณาเลือกวันที่ต้องการจอง';
+		if (!startTime || !endTime) return 'กรุณาระบุเวลาเริ่มและเวลาสิ้นสุด';
 		if (startTime >= endTime) return 'เวลาเริ่มต้องน้อยกว่าเวลาจบ';
 		if (!title.trim()) return 'กรุณากรอกหัวข้อการจอง';
 		return null;
@@ -309,98 +298,134 @@
 	class="bg-background text-foreground min-h-screen w-screen font-['Inter','Prompt',sans-serif] antialiased"
 >
 	<Topbar />
-	<div
-		class="mx-auto flex min-h-screen max-w-[1600px] flex-col gap-8 px-6 pt-6 pb-8 md:px-10 md:pt-8 md:pb-10"
-	>
-		<!-- ============ HEADER ============ -->
-		<header
-			class="flex flex-col gap-6 border-b pb-6 md:flex-row md:items-end md:justify-between"
+
+	<div class="mx-auto max-w-[1400px] px-6 py-6 md:px-10">
+		<!-- Page Header: Simple & Professional -->
+		<div
+			class="flex flex-col gap-4 border-b border-zinc-200 dark:border-zinc-800 pb-6 mb-8 md:flex-row md:items-end md:justify-between"
 		>
-			<div class="flex flex-col gap-2">
-				<div
-					class="text-muted-foreground flex items-center gap-3 text-[11px] font-semibold tracking-[0.2em] uppercase"
-				>
-					<span class="bg-foreground inline-block h-1.5 w-1.5 rounded-full"></span>
-					New Booking
-				</div>
-				<h1 class="text-3xl font-bold tracking-tight md:text-4xl">
+			<div class="space-y-1">
+				<h1 class="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
 					จองห้องประชุม
 				</h1>
+				<p class="text-zinc-500 dark:text-zinc-400 text-sm">
+					เลือกห้องเรียน/ห้องประชุม ระบุวันเวลา และกรอกข้อมูลการจองใช้งาน
+				</p>
 			</div>
 
-			<ThemeToggle />
-		</header>
+			<div class="flex items-center gap-3">
+				<ThemeToggle />
+			</div>
+		</div>
 
 		{#if submitSuccess}
-			<!-- Success state -->
-			<Card.Root
-				class="border-emerald-500/30 bg-emerald-500/10 flex flex-col items-center gap-4 p-10 text-center"
-			>
-				<div
-					class="bg-emerald-500 inline-flex h-12 w-12 items-center justify-center rounded-full text-white"
+			<!-- Clean Success State -->
+			<div class="mx-auto max-w-xl" in:fade={{ duration: 200 }}>
+				<Card.Root
+					class="border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 flex flex-col items-center gap-5 p-10 text-center shadow-xs rounded-xl"
 				>
-					<CheckCircle2 class="h-6 w-6" />
-				</div>
-				<Card.Header class="p-0">
-					<Card.Title class="text-2xl">ส่งคำขอจองแล้ว</Card.Title>
-					<Card.Description>
-						รอผู้ดูแลอนุมัติ สถานะจะอัปเดตเป็น "approved" เมื่อได้รับการยืนยัน
-					</Card.Description>
-				</Card.Header>
-				<div class="flex gap-3">
-					<Button
-						variant="outline"
-						onclick={() => {
-							submitSuccess = false;
-						}}
+					<div
+						class="bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 flex h-14 w-14 items-center justify-center rounded-full"
 					>
-						จองอีกครั้ง
-					</Button>
-					<Button onclick={() => goto('/book')}>กลับหน้าหลัก</Button>
-				</div>
-			</Card.Root>
+						<Check class="h-6 w-6 stroke-[3.5]" />
+					</div>
+					<Card.Header class="p-0 space-y-1.5">
+						<Card.Title class="text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
+							ส่งคำขอจองห้องประชุมแล้ว
+						</Card.Title>
+						<Card.Description class="text-zinc-500 dark:text-zinc-400 text-sm">
+							ส่งคำขอสำเร็จแล้ว สถานะของรายการจะเป็น <span class="text-indigo-600 dark:text-indigo-400 font-semibold">approved</span> เมื่อได้รับการตรวจสอบและยืนยันจากผู้ดูแลระบบ
+						</Card.Description>
+					</Card.Header>
+					<div class="flex gap-3 mt-1">
+						<Button
+							variant="outline"
+							onclick={() => {
+								submitSuccess = false;
+							}}
+							class="rounded-lg"
+						>
+							จองรายการอื่นเพิ่มเติม
+						</Button>
+						<Button
+							href="/book"
+							class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg"
+						>
+							กลับหน้าหลัก
+						</Button>
+					</div>
+				</Card.Root>
+			</div>
 		{:else}
-			<form onsubmit={handleSubmit} class="grid flex-1 gap-6 lg:grid-cols-[1.4fr_1fr]">
-				<!-- LEFT: form -->
+			<form onsubmit={handleSubmit} class="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
+				<!-- LEFT COLUMN: Form Steps -->
 				<div class="flex flex-col gap-6">
-					<!-- 1. Room selection -->
-					<Card.Root class="gap-3 p-6">
-						<Card.Header class="flex flex-row items-center justify-between p-0">
-							<Card.Title class="text-muted-foreground text-[11px] font-semibold tracking-[0.2em] uppercase">
-								1 · เลือกห้อง
-							</Card.Title>
-							{#if selectedRoomId}
-								<span class="text-muted-foreground text-xs">
-									เลือก: <strong class="text-foreground">{getRoomName(selectedRoomId)}</strong>
+					
+					<!-- 1. Room Selection Step -->
+					<Card.Root class="border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 rounded-xl overflow-hidden shadow-xs">
+						<Card.Header class="border-b border-zinc-100 dark:border-zinc-800/80 px-6 py-4 flex flex-row items-center justify-between">
+							<div class="flex items-center gap-2">
+								<span class="bg-indigo-600 text-white font-mono text-[10px] font-bold flex h-4.5 w-4.5 items-center justify-center rounded-full">
+									1
 								</span>
+								<Card.Title class="text-sm font-semibold tracking-wide uppercase text-zinc-700 dark:text-zinc-300">
+									เลือกห้องเรียน / ห้องประชุม
+								</Card.Title>
+							</div>
+							{#if selectedRoomId}
+								<Badge variant="outline" class="border-indigo-500/20 bg-indigo-50/50 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-400">
+									เลือก: {getRoomName(selectedRoomId)}
+								</Badge>
 							{/if}
 						</Card.Header>
 
-						<Card.Content class="p-0">
+						<Card.Content class="p-6">
 							{#if loadingRooms}
-								<p class="text-muted-foreground flex items-center gap-2 text-sm">
-									<Loader2 class="h-3.5 w-3.5 animate-spin" />
-									กำลังโหลดห้อง...
-								</p>
+								<div class="text-zinc-400 dark:text-zinc-500 flex items-center justify-center py-6 gap-2 text-xs">
+									<Loader2 class="h-4 w-4 animate-spin text-indigo-600" />
+									กำลังโหลดรายการห้อง...
+								</div>
 							{:else if rooms.length === 0}
-								<p class="text-muted-foreground text-sm">ไม่พบห้องในระบบ</p>
+								<div class="text-zinc-400 dark:text-zinc-500 text-center py-6 text-xs italic">
+									ไม่พบห้องประชุมในขณะนี้
+								</div>
 							{:else}
-								<div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
+								<div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
 									{#each rooms as room (room.id)}
 										<button
 											type="button"
 											onclick={() => selectRoom(room.id)}
 											class={cn(
-												'rounded-md border p-3 text-left transition-colors',
+												'rounded-lg border p-4 text-left transition-colors duration-200 flex flex-col justify-between h-24',
 												selectedRoomId === room.id
-													? 'border-primary bg-primary text-primary-foreground'
-													: 'bg-card hover:border-muted-foreground/50'
+													? 'border-indigo-600 bg-indigo-50/30 dark:bg-indigo-950/20'
+													: 'border-zinc-200 dark:border-zinc-800 bg-card hover:bg-slate-50 dark:hover:bg-zinc-850'
 											)}
 										>
-											<div class="text-sm font-semibold">{room.name}</div>
-											{#if room.location}
-												<div class="mt-0.5 text-xs opacity-70">{room.location}</div>
-											{/if}
+											<div>
+												<div class="text-sm font-bold text-zinc-800 dark:text-zinc-200">
+													{room.name}
+												</div>
+												{#if room.location}
+													<div class="text-zinc-500 dark:text-zinc-400 flex items-center gap-1 mt-1 text-xs">
+														<MapPin class="h-3 w-3 shrink-0" />
+														<span class="truncate">{room.location}</span>
+													</div>
+												{/if}
+											</div>
+
+											<div class="flex justify-end w-full">
+												<div
+													class={cn(
+														'h-5 w-5 rounded-full flex items-center justify-center border text-[10px]',
+														selectedRoomId === room.id
+															? 'bg-indigo-600 border-indigo-600 text-white'
+															: 'border-zinc-300 dark:border-zinc-700 bg-background text-transparent'
+													)}
+												>
+													<Check class="h-3 w-3 stroke-[2.5]" />
+												</div>
+											</div>
 										</button>
 									{/each}
 								</div>
@@ -408,174 +433,244 @@
 						</Card.Content>
 					</Card.Root>
 
-					<!-- 2. Date & time -->
-					<Card.Root class="gap-4 p-6">
-						<Card.Header class="p-0">
-							<Card.Title class="text-muted-foreground text-[11px] font-semibold tracking-[0.2em] uppercase">
-								2 · วันและเวลา
-							</Card.Title>
+					<!-- 2. Date & Time Step -->
+					<Card.Root class="border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 rounded-xl overflow-hidden shadow-xs">
+						<Card.Header class="border-b border-zinc-100 dark:border-zinc-800/80 px-6 py-4 flex items-center">
+							<div class="flex items-center gap-2">
+								<span class="bg-indigo-600 text-white font-mono text-[10px] font-bold flex h-4.5 w-4.5 items-center justify-center rounded-full">
+									2
+								</span>
+								<Card.Title class="text-sm font-semibold tracking-wide uppercase text-zinc-700 dark:text-zinc-300">
+									วันและเวลาที่ต้องการใช้ห้อง
+								</Card.Title>
+							</div>
 						</Card.Header>
 
-						<Card.Content class="grid grid-cols-1 gap-4 p-0 sm:grid-cols-3">
+						<Card.Content class="p-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
 							<div class="flex flex-col gap-1.5">
-								<Label for="book-date">วันที่</Label>
-								<Input id="book-date" type="date" bind:value={bookingDate} />
-							</div>
-
-							<div class="flex flex-col gap-1.5">
-								<Label for="book-start">เวลาเริ่ม</Label>
+								<Label for="book-date" class="text-xs font-semibold flex items-center gap-1 text-zinc-600 dark:text-zinc-400">
+									<Calendar class="h-3.5 w-3.5 text-indigo-500" />
+									วันที่
+								</Label>
 								<Input
-									id="book-start"
-									type="time"
-									bind:value={startTime}
-									class="font-mono"
+									id="book-date"
+									type="date"
+									bind:value={bookingDate}
+									class="rounded-lg border-zinc-200 dark:border-zinc-800 focus-visible:ring-indigo-600/10 focus-visible:border-indigo-600"
 								/>
 							</div>
 
 							<div class="flex flex-col gap-1.5">
-								<Label for="book-end">เวลาจบ</Label>
-								<Input id="book-end" type="time" bind:value={endTime} class="font-mono" />
+								<Label for="book-start" class="text-xs font-semibold flex items-center gap-1 text-zinc-600 dark:text-zinc-400">
+									<Clock class="h-3.5 w-3.5 text-emerald-500" />
+									เวลาเริ่ม
+								</Label>
+								<Input
+									id="book-start"
+									type="time"
+									bind:value={startTime}
+									class="font-mono rounded-lg border-zinc-200 dark:border-zinc-800 focus-visible:ring-indigo-600/10 focus-visible:border-indigo-600"
+								/>
+							</div>
+
+							<div class="flex flex-col gap-1.5">
+								<Label for="book-end" class="text-xs font-semibold flex items-center gap-1 text-zinc-600 dark:text-zinc-400">
+									<Clock class="h-3.5 w-3.5 text-rose-500" />
+									เวลาสิ้นสุด
+								</Label>
+								<Input
+									id="book-end"
+									type="time"
+									bind:value={endTime}
+									class="font-mono rounded-lg border-zinc-200 dark:border-zinc-800 focus-visible:ring-indigo-600/10 focus-visible:border-indigo-600"
+								/>
 							</div>
 						</Card.Content>
 					</Card.Root>
 
-					<!-- 3. Details -->
-					<Card.Root class="gap-4 p-6">
-						<Card.Header class="p-0">
-							<Card.Title class="text-muted-foreground text-[11px] font-semibold tracking-[0.2em] uppercase">
-								3 · รายละเอียด
-							</Card.Title>
+					<!-- 3. Details Step -->
+					<Card.Root class="border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 rounded-xl overflow-hidden shadow-xs">
+						<Card.Header class="border-b border-zinc-100 dark:border-zinc-800/80 px-6 py-4 flex items-center">
+							<div class="flex items-center gap-2">
+								<span class="bg-indigo-600 text-white font-mono text-[10px] font-bold flex h-4.5 w-4.5 items-center justify-center rounded-full">
+									3
+								</span>
+								<Card.Title class="text-sm font-semibold tracking-wide uppercase text-zinc-700 dark:text-zinc-300">
+									รายละเอียดการใช้งาน
+								</Card.Title>
+							</div>
 						</Card.Header>
 
-						<Card.Content class="flex flex-col gap-4 p-0">
+						<Card.Content class="p-6 flex flex-col gap-4">
 							<div class="flex flex-col gap-1.5">
-								<Label for="book-title">
-									หัวข้อการจอง <span class="text-destructive">*</span>
+								<Label for="book-title" class="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+									หัวข้อการจอง <span class="text-destructive font-bold">*</span>
 								</Label>
 								<Input
 									id="book-title"
 									type="text"
 									bind:value={title}
-									placeholder="เช่น Marketing Team Meeting"
+									placeholder="เช่น Marketing Team Sync-up, ประชุมปรึกษางาน"
 									maxlength={200}
+									class="rounded-lg border-zinc-200 dark:border-zinc-800 focus-visible:ring-indigo-600/10 focus-visible:border-indigo-600"
 								/>
 							</div>
 
 							<div class="flex flex-col gap-1.5">
-								<Label for="book-notes">
-									รายละเอียดเพิ่มเติม <span class="text-muted-foreground">(ไม่บังคับ)</span>
+								<Label for="book-notes" class="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+									รายละเอียดอื่น ๆ <span class="text-zinc-400 font-normal">(ไม่บังคับ)</span>
 								</Label>
 								<Textarea
 									id="book-notes"
 									bind:value={notes}
-									placeholder="เช่น ต้องการ projector, นั่ง 10 คน"
+									placeholder="เช่น ระบุจำนวนผู้เข้าร่วม หรืออุปกรณ์เสริมที่ต้องการเพิ่มเติม"
 									rows={3}
 									maxlength={500}
-									class="resize-none"
+									class="resize-none rounded-lg border-zinc-200 dark:border-zinc-800 focus-visible:ring-indigo-600/10 focus-visible:border-indigo-600"
 								/>
 							</div>
 						</Card.Content>
 					</Card.Root>
 
-					<!-- Validation + submit -->
+					<!-- Notifications & Validation alerts -->
 					{#if validationError}
-						<Alert variant="destructive">
+						<Alert variant="destructive" class="border-red-200 bg-red-50 text-red-700 dark:bg-red-950/20 dark:border-red-900/30 dark:text-red-400 rounded-lg">
 							<AlertCircle class="h-4 w-4" />
-							<AlertTitle>ไม่สามารถส่งคำขอได้</AlertTitle>
-							<AlertDescription>{validationError}</AlertDescription>
-						</Alert>
-					{/if}
-					{#if submitError}
-						<Alert variant="destructive">
-							<AlertCircle class="h-4 w-4" />
-							<AlertTitle>เซิร์ฟเวอร์ปฏิเสธคำขอ</AlertTitle>
-							<AlertDescription>{submitError}</AlertDescription>
+							<AlertTitle class="font-semibold text-sm">ระบุข้อมูลไม่ครบถ้วน</AlertTitle>
+							<AlertDescription class="text-xs mt-0.5">{validationError}</AlertDescription>
 						</Alert>
 					{/if}
 
-					<Button type="submit" disabled={submitting} size="lg" class="gap-2">
+					{#if submitError}
+						<Alert variant="destructive" class="border-red-200 bg-red-50 text-red-700 dark:bg-red-950/20 dark:border-red-900/30 dark:text-red-400 rounded-lg">
+							<AlertCircle class="h-4 w-4" />
+							<AlertTitle class="font-semibold text-sm">การส่งคำขอจองล้มเหลว</AlertTitle>
+							<AlertDescription class="text-xs mt-0.5">{submitError}</AlertDescription>
+						</Alert>
+					{/if}
+
+					<Button
+						type="submit"
+						disabled={submitting}
+						class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3.5 rounded-lg shadow-xs transition-colors duration-200"
+					>
 						{#if submitting}
-							<Loader2 class="h-4 w-4 animate-spin" />
-							กำลังส่ง...
+							<Loader2 class="h-4 w-4 animate-spin mr-2" />
+							กำลังส่งคำขอจองห้อง...
 						{:else}
-							<CalendarPlus class="h-4 w-4" />
-							ส่งคำขอจอง
+							<CalendarPlus class="h-4 w-4 mr-2" />
+							ส่งคำขอจองห้องประชุม
 						{/if}
 					</Button>
 				</div>
 
-				<!-- RIGHT: existing bookings preview -->
+				<!-- RIGHT COLUMN: Interactive Queue -->
 				<aside class="flex flex-col gap-4">
-					<Card.Root class="sticky top-6 gap-4 p-6">
-						<Card.Header class="p-0">
-							<Card.Title class="text-muted-foreground text-[11px] font-semibold tracking-[0.2em] uppercase">
-								คิวของวันนี้
+					<Card.Root class="sticky top-20 border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 rounded-xl overflow-hidden shadow-xs">
+						<Card.Header class="border-b border-zinc-100 dark:border-zinc-800/80 px-6 py-4 flex flex-row items-center justify-between">
+							<Card.Title class="text-sm font-semibold tracking-wide uppercase text-zinc-700 dark:text-zinc-300">
+								คิวการจองวันนี้
 							</Card.Title>
+							<Badge variant="outline" class="font-mono text-[10px] px-2 py-0.5">
+								{bookingDate}
+							</Badge>
 						</Card.Header>
 
-						<Card.Content class="flex flex-col gap-2 p-0">
+						<Card.Content class="p-6">
 							{#if !selectedRoomId}
-								<p class="text-muted-foreground text-sm">เลือกห้องเพื่อดูคิวที่มีอยู่</p>
+								<div class="flex flex-col items-center justify-center text-center py-8 space-y-2">
+									<div class="h-10 w-10 rounded-full bg-zinc-50 dark:bg-zinc-800 flex items-center justify-center text-zinc-400">
+										<MapPin class="h-5 w-5" />
+									</div>
+									<p class="text-zinc-500 text-xs">
+										โปรดเลือกห้องประชุมเพื่อเรียกดูตารางการจองวันนี้
+									</p>
+								</div>
 							{:else if loadingBookings}
-								<p class="text-muted-foreground flex items-center gap-2 text-sm">
-									<Loader2 class="h-3.5 w-3.5 animate-spin" />
-									กำลังโหลด...
-								</p>
+								<div class="text-zinc-400 dark:text-zinc-500 flex items-center justify-center py-8 gap-2 text-xs">
+									<Loader2 class="h-4 w-4 animate-spin text-indigo-600" />
+									กำลังดึงรายการคิวจอง...
+								</div>
 							{:else if existingBookings.length === 0}
 								<div
-									class="border-muted-foreground/30 rounded-md border border-dashed px-4 py-8 text-center text-sm"
+									class="border-zinc-200 dark:border-zinc-800 border-dashed bg-zinc-50/50 dark:bg-zinc-950/10 rounded-lg border-2 px-4 py-10 text-center text-xs flex flex-col items-center justify-center space-y-1.5"
 								>
-									ห้องว่างตลอดทั้งวัน
+									<CheckCircle2 class="h-6 w-6 text-emerald-500" />
+									<p class="font-semibold text-zinc-700 dark:text-zinc-300">ห้องว่างตลอดทั้งวัน</p>
+									<p class="text-zinc-400 dark:text-zinc-500">สามารถเลือกเวลาใช้งานที่ต้องการได้ทันที</p>
 								</div>
 							{:else}
-								<ul class="flex flex-col gap-2">
+								<!-- Vertical Queue Timeline: simplified -->
+								<div class="relative pl-5 space-y-4 py-1">
+									<div class="absolute left-2 top-2 bottom-2 w-px bg-zinc-200 dark:bg-zinc-800"></div>
+
 									{#each existingBookings as b (b.id)}
-										<li
-											class="bg-muted/40 flex flex-col gap-1 rounded-md border px-3 py-2"
-										>
-											<div class="flex items-center justify-between gap-2">
-												<span class="font-mono text-xs font-medium">
-													{formatTime(b.start_time)} - {formatTime(b.end_time)}
-												</span>
-												<Badge
-													variant={b.status === 'pending' ? 'warning' : 'success'}
-													class="text-[10px] uppercase tracking-wider"
-												>
-													{b.status}
-												</Badge>
-											</div>
-											<p class="truncate text-sm font-semibold">{b.title}</p>
-											{#if b.bookerName || b.bookerEmail || b.booker_email}
-												<p class="text-muted-foreground flex items-center gap-1 truncate text-xs">
-													<Users class="h-3 w-3 shrink-0" />
-													<span class="truncate">
-														{b.bookerName || b.bookerEmail || b.booker_email}
+										<div class="relative">
+											<!-- Simple status colored indicator dot -->
+											<div class={cn(
+												"absolute -left-[18px] top-1.5 h-2 w-2 rounded-full border bg-background",
+												b.status === 'pending'
+													? 'border-amber-500 bg-amber-500'
+													: 'border-emerald-500 bg-emerald-500'
+											)}></div>
+
+											<div
+												class="bg-zinc-50/60 dark:bg-zinc-850 border border-zinc-100 dark:border-zinc-800/80 rounded-lg px-4 py-3"
+											>
+												<div class="flex items-center justify-between gap-2 mb-1">
+													<span class="font-mono text-[10px] font-bold text-zinc-600 dark:text-zinc-400 flex items-center gap-1 bg-zinc-200/50 dark:bg-zinc-800 px-2 py-0.5 rounded">
+														<Clock class="h-3 w-3 text-zinc-400" />
+														{formatTime(b.start_time)} - {formatTime(b.end_time)}
 													</span>
-												</p>
-											{/if}
-											{#if b.detailLabel}
-												<p
-													class="text-muted-foreground flex items-start gap-1 truncate text-xs"
-													title={b.detailLabel}
-												>
-													<FileText class="mt-0.5 h-3 w-3 shrink-0" />
-													<span class="truncate">{b.detailLabel}</span>
-												</p>
-											{/if}
-										</li>
+													
+													<Badge
+														variant={b.status === 'pending' ? 'warning' : 'success'}
+														class="text-[8px] font-semibold px-1 rounded"
+													>
+														{b.status === 'pending' ? 'pending' : 'approved'}
+													</Badge>
+												</div>
+
+												<h4 class="text-xs font-bold text-zinc-850 dark:text-zinc-200 line-clamp-1">
+													{b.title}
+												</h4>
+
+												<div class="mt-2 space-y-1 text-[10px]">
+													{#if b.bookerName || b.bookerEmail || b.booker_email}
+														<div class="text-zinc-500 flex items-center gap-1.5 truncate">
+															<Users class="h-3 w-3 text-zinc-400" />
+															<span class="truncate">
+																{b.bookerName || b.bookerEmail || b.booker_email}
+															</span>
+														</div>
+													{/if}
+													
+													{#if b.detailLabel}
+														<div class="text-zinc-500 flex items-start gap-1.5 truncate">
+															<FileText class="h-3 w-3 text-zinc-400" />
+															<span class="truncate">{b.detailLabel}</span>
+														</div>
+													{/if}
+												</div>
+											</div>
+										</div>
 									{/each}
-								</ul>
+								</div>
 							{/if}
+
+							<Separator class="my-4 border-zinc-100 dark:border-zinc-800/60" />
+
+							<!-- Tips Section: simplified -->
+							<div
+								class="bg-zinc-50/80 dark:bg-zinc-950/20 border border-zinc-200/60 dark:border-zinc-800/40 text-zinc-500 dark:text-zinc-400 flex items-start gap-2 rounded-lg p-3 text-[11px] leading-relaxed"
+							>
+								<Lightbulb class="mt-0.5 h-3.5 w-3.5 shrink-0 text-indigo-500" />
+								<div>
+									<span class="font-bold text-zinc-700 dark:text-zinc-300 block mb-0.5">ระบบเช็คความทับซ้อน</span>
+									หากพบเวลาชนกับรายการอื่น ระบบจะแจ้งเตือนและส่งคำขอไม่สำเร็จ โปรดหลีกเลี่ยงการเลือกเวลาซ้อนคิวผู้อื่น
+								</div>
+							</div>
 						</Card.Content>
-
-						<Separator />
-
-						<div
-							class="bg-muted/40 text-muted-foreground flex items-start gap-2 rounded-md p-3 text-xs"
-						>
-							<Lightbulb class="mt-0.5 h-3.5 w-3.5 shrink-0" />
-							<span>ระบบจะเช็คเวลาซ้อนทับให้อัตโนมัติ ถ้าเลือกเวลาที่ชนกับคิวเดิมจะแจ้งเตือน</span>
-						</div>
 					</Card.Root>
 				</aside>
 			</form>
