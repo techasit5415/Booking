@@ -88,15 +88,15 @@
 	<div class="mx-auto max-w-[1400px] px-6 py-6 md:px-10">
 		<!-- Page Header: Simple & Professional -->
 		<div
-			class="flex flex-col gap-4 border-b border-zinc-200 dark:border-zinc-800 pb-6 mb-8 md:flex-row md:items-end md:justify-between"
+			class="flex flex-col gap-4 border-b border-border pb-6 mb-8 md:flex-row md:items-end md:justify-between"
 		>
 			<div class="space-y-1">
 				<h1
-					class="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50"
+					class="text-2xl font-bold tracking-tight text-foreground"
 				>
 					จองห้อง
 				</h1>
-				<p class="text-zinc-500 dark:text-zinc-400 text-sm">
+				<p class="text-muted-foreground text-sm">
 					เลือกห้องเรียน/ห้องประชุม ระบุวันเวลา
 					และกรอกข้อมูลการจองใช้งาน
 				</p>

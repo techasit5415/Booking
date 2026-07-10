@@ -29,7 +29,7 @@
 </script>
 
 <div
-	class="border border-zinc-200 dark:border-zinc-800 bg-card rounded-xl p-4 flex flex-col items-stretch gap-4 sm:flex-row sm:items-center sm:justify-between shadow-xs"
+	class="border border-border bg-card rounded-xl p-4 flex flex-col items-stretch gap-4 sm:flex-row sm:items-center sm:justify-between shadow-xs"
 >
 	<!-- Room selector -->
 	<div class="flex flex-wrap items-center gap-4">
@@ -47,7 +47,7 @@
 			>
 				<Select.Trigger
 					id="room-select"
-					class="w-[200px] rounded-lg border-zinc-200 dark:border-zinc-800"
+					class="w-[200px] rounded-lg border-border"
 				>
 					<Select.Value placeholder="กำลังโหลด...">
 						{rawRooms.find((r) => r.id === selectedRoomId)?.name ||
@@ -78,13 +78,13 @@
 
 		<!-- Month Navigator -->
 		<div
-			class="flex items-center gap-2 sm:border-l sm:border-zinc-200 dark:sm:border-zinc-800 sm:pl-4"
+			class="flex items-center gap-2 sm:border-l sm:border-border sm:pl-4"
 		>
 			<Button
 				variant="outline"
 				size="icon"
 				onclick={prevMonth}
-				class="h-9 w-9 rounded-lg border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800 cursor-pointer"
+				class="h-9 w-9 rounded-lg border-border hover:bg-accent cursor-pointer"
 				title="เดือนก่อนหน้า"
 			>
 				&lt;
@@ -99,7 +99,7 @@
 				variant="outline"
 				size="icon"
 				onclick={nextMonth}
-				class="h-9 w-9 rounded-lg border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800 cursor-pointer"
+				class="h-9 w-9 rounded-lg border-border hover:bg-accent cursor-pointer"
 				title="เดือนถัดไป"
 			>
 				&gt;

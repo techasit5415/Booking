@@ -9,7 +9,7 @@
 
 <div class="mx-auto max-w-xl" in:fade={{ duration: 200 }}>
 	<Card.Root
-		class="border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 flex flex-col items-center gap-5 p-10 text-center shadow-xs rounded-xl"
+		class="border-border bg-card flex flex-col items-center gap-5 p-10 text-center shadow-xs rounded-xl"
 	>
 		<div
 			class="bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 flex h-14 w-14 items-center justify-center rounded-full"
@@ -18,12 +18,12 @@
 		</div>
 		<Card.Header class="p-0 space-y-1.5">
 			<Card.Title
-				class="text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50"
+				class="text-xl font-bold tracking-tight text-foreground"
 			>
 				ส่งคำขอจองห้องประชุมแล้ว
 			</Card.Title>
 			<Card.Description
-				class="text-zinc-500 dark:text-zinc-400 text-sm"
+				class="text-muted-foreground text-sm"
 			>
 				ส่งคำขอสำเร็จแล้ว สถานะของรายการจะเป็น <span
 					class="text-indigo-600 dark:text-indigo-400 font-semibold"

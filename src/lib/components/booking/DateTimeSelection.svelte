@@ -28,10 +28,10 @@
 </script>
 
 <Card.Root
-	class="border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 rounded-xl overflow-hidden shadow-xs"
+	class="border-border bg-card rounded-xl overflow-hidden shadow-xs"
 >
 	<Card.Header
-		class="border-b border-zinc-100 dark:border-zinc-800/80 px-6 py-4 flex items-center"
+		class="border-b border-border/80 px-6 py-4 flex items-center"
 	>
 		<div class="flex items-center gap-2">
 			<span
@@ -40,7 +40,7 @@
 				2
 			</span>
 			<Card.Title
-				class="text-sm font-semibold tracking-wide uppercase text-zinc-700 dark:text-zinc-300"
+				class="text-sm font-semibold tracking-wide uppercase text-foreground/80"
 			>
 				วันและเวลาที่ต้องการใช้ห้อง
 			</Card.Title>
@@ -52,7 +52,7 @@
 			<div class="flex flex-col gap-1.5" transition:slide>
 				<Label
 					for="book-date"
-					class="text-xs font-semibold flex items-center gap-1 text-zinc-600 dark:text-zinc-400"
+					class="text-xs font-semibold flex items-center gap-1 text-muted-foreground"
 				>
 					<Calendar class="h-3.5 w-3.5 text-indigo-500" />
 					วันที่
@@ -61,14 +61,14 @@
 					id="book-date"
 					type="date"
 					bind:value={bookingDate}
-					class="rounded-lg border-zinc-200 dark:border-zinc-800 focus-visible:ring-indigo-600/10 focus-visible:border-indigo-600"
+					class="rounded-lg border-border focus-visible:ring-indigo-600/10 focus-visible:border-indigo-600"
 				/>
 			</div>
 
 			<div class="flex flex-col gap-1.5" transition:slide>
 				<Label
 					for="book-start"
-					class="text-xs font-semibold flex items-center gap-1 text-zinc-600 dark:text-zinc-400"
+					class="text-xs font-semibold flex items-center gap-1 text-muted-foreground"
 				>
 					<Clock class="h-3.5 w-3.5 text-emerald-500" />
 					เวลาเริ่ม
@@ -77,14 +77,14 @@
 					id="book-start"
 					type="time"
 					bind:value={startTime}
-					class="font-mono rounded-lg border-zinc-200 dark:border-zinc-800 focus-visible:ring-indigo-600/10 focus-visible:border-indigo-600"
+					class="font-mono rounded-lg border-border focus-visible:ring-indigo-600/10 focus-visible:border-indigo-600"
 				/>
 			</div>
 
 			<div class="flex flex-col gap-1.5" transition:slide>
 				<Label
 					for="book-end"
-					class="text-xs font-semibold flex items-center gap-1 text-zinc-600 dark:text-zinc-400"
+					class="text-xs font-semibold flex items-center gap-1 text-muted-foreground"
 				>
 					<Clock class="h-3.5 w-3.5 text-rose-500" />
 					เวลาสิ้นสุด
@@ -93,14 +93,14 @@
 					id="book-end"
 					type="time"
 					bind:value={endTime}
-					class="font-mono rounded-lg border-zinc-200 dark:border-zinc-800 focus-visible:ring-indigo-600/10 focus-visible:border-indigo-600"
+					class="font-mono rounded-lg border-border focus-visible:ring-indigo-600/10 focus-visible:border-indigo-600"
 				/>
 			</div>
 		{/if}
 
 		{#if isAdmin}
 			<div
-				class="col-span-full border-t border-zinc-100 dark:border-zinc-800/80 pt-5 mt-3"
+				class="col-span-full border-t border-border/80 pt-5 mt-3"
 			>
 				<label class="flex items-start gap-3 cursor-pointer select-none">
 					<div class="relative flex items-center mt-1">
@@ -110,17 +110,17 @@
 							class="sr-only peer"
 						/>
 						<div
-							class="relative w-9 h-5 bg-zinc-200 peer-focus:outline-none dark:bg-zinc-800 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-zinc-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-zinc-600 peer-checked:bg-indigo-600"
+							class="relative w-9 h-5 bg-muted peer-focus:outline-none dark:bg-muted rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-border after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-border peer-checked:bg-indigo-600"
 						></div>
 					</div>
 					<div class="flex flex-col">
 						<span
-							class="text-sm font-semibold text-zinc-800 dark:text-zinc-200"
+							class="text-sm font-semibold text-foreground"
 						>
 							จองซ้ำทุกสัปดาห์ (Recurring Weekly Booking)
 						</span>
 						<span
-							class="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5"
+							class="text-xs text-muted-foreground mt-0.5"
 						>
 							จองวันเดิมและช่วงเวลาเดิมซ้ำทุกสัปดาห์โดยอัตโนมัติ
 							(เหมาะสำหรับการลงตารางเรียนสัมมนาของสัปเกรดการศึกษา)
@@ -135,7 +135,7 @@
 							<div class="flex flex-col gap-1.5">
 								<Label
 									for="book-date-start"
-									class="text-xs font-semibold flex items-center gap-1 text-zinc-600 dark:text-zinc-400"
+									class="text-xs font-semibold flex items-center gap-1 text-muted-foreground"
 								>
 									<Calendar class="h-3.5 w-3.5 text-indigo-500" />
 									วันที่เริ่มต้น
@@ -144,14 +144,14 @@
 									id="book-date-start"
 									type="date"
 									bind:value={bookingDate}
-									class="rounded-lg border-zinc-200 dark:border-zinc-800 focus-visible:ring-indigo-600/10 focus-visible:border-indigo-600"
+									class="rounded-lg border-border focus-visible:ring-indigo-600/10 focus-visible:border-indigo-600"
 								/>
 							</div>
 
 							<div class="flex flex-col gap-1.5">
 								<Label
 									for="recurring-until"
-									class="text-xs font-semibold flex items-center gap-1 text-zinc-600 dark:text-zinc-400"
+									class="text-xs font-semibold flex items-center gap-1 text-muted-foreground"
 								>
 									<Calendar class="h-3.5 w-3.5 text-indigo-500" />
 									วันที่สิ้นสุด
@@ -161,7 +161,7 @@
 									type="date"
 									bind:value={recurringUntil}
 									min={bookingDate}
-									class="rounded-lg border-zinc-200 dark:border-zinc-800 focus-visible:ring-indigo-600/10 focus-visible:border-indigo-600"
+									class="rounded-lg border-border focus-visible:ring-indigo-600/10 focus-visible:border-indigo-600"
 								/>
 							</div>
 						</div>
@@ -171,7 +171,7 @@
 							<div class="flex flex-col gap-1.5">
 								<Label
 									for="book-start-recurring"
-									class="text-xs font-semibold flex items-center gap-1 text-zinc-600 dark:text-zinc-400"
+									class="text-xs font-semibold flex items-center gap-1 text-muted-foreground"
 								>
 									<Clock class="h-3.5 w-3.5 text-emerald-500" />
 									เวลาเริ่ม
@@ -180,14 +180,14 @@
 									id="book-start-recurring"
 									type="time"
 									bind:value={startTime}
-									class="font-mono rounded-lg border-zinc-200 dark:border-zinc-800 focus-visible:ring-indigo-600/10 focus-visible:border-indigo-600"
+									class="font-mono rounded-lg border-border focus-visible:ring-indigo-600/10 focus-visible:border-indigo-600"
 								/>
 							</div>
 
 							<div class="flex flex-col gap-1.5">
 								<Label
 									for="book-end-recurring"
-									class="text-xs font-semibold flex items-center gap-1 text-zinc-600 dark:text-zinc-400"
+									class="text-xs font-semibold flex items-center gap-1 text-muted-foreground"
 								>
 									<Clock class="h-3.5 w-3.5 text-rose-500" />
 									เวลาสิ้นสุด
@@ -196,14 +196,14 @@
 									id="book-end-recurring"
 									type="time"
 									bind:value={endTime}
-									class="font-mono rounded-lg border-zinc-200 dark:border-zinc-800 focus-visible:ring-indigo-600/10 focus-visible:border-indigo-600"
+									class="font-mono rounded-lg border-border focus-visible:ring-indigo-600/10 focus-visible:border-indigo-600"
 								/>
 							</div>
 						</div>
 
 						<div class="flex flex-col gap-2.5">
 							<span
-								class="text-xs font-semibold text-zinc-600 dark:text-zinc-400"
+								class="text-xs font-semibold text-muted-foreground"
 							>
 								เลือกวันในสัปดาห์ที่ต้องการจองซ้ำ
 							</span>
@@ -224,7 +224,7 @@
 											"h-10 px-3.5 rounded-lg border text-xs font-bold transition-all duration-200 cursor-pointer select-none",
 											recurringDays.includes(d.val)
 												? "bg-indigo-600 border-indigo-600 text-white shadow-sm shadow-indigo-500/20"
-												: "bg-background border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-slate-50 dark:hover:bg-zinc-850"
+												: "bg-background border-border text-muted-foreground hover:bg-accent"
 										)}
 										title={d.name}
 									>

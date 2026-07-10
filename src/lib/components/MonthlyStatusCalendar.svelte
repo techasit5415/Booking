@@ -102,11 +102,11 @@
 </script>
 
 <Card.Root
-	class="gap-0 overflow-hidden p-0 border border-zinc-200 dark:border-zinc-800 bg-card shadow-xs rounded-xl"
+	class="gap-0 overflow-hidden p-0 border border-border bg-card shadow-xs rounded-xl"
 >
 	<!-- Day-of-week header -->
 	<div
-		class="border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950/40 grid grid-cols-7 border-b"
+		class="border-border bg-muted/40 grid grid-cols-7 border-b"
 	>
 		{#each daysOfWeek as day}
 			<div
@@ -119,7 +119,7 @@
 
 	<!-- Calendar Grid of Cells -->
 	<div
-		class="grid grid-cols-7 divide-x divide-y divide-zinc-200/50 dark:divide-zinc-800/50 border-t border-l border-zinc-200/50 dark:border-zinc-800/50"
+		class="grid grid-cols-7 divide-x divide-y divide-border/50 border-t border-l border-border/50"
 	>
 		{#each calendarDays as day, i (day.dateKey)}
 			<div
@@ -127,10 +127,10 @@
 					"group flex min-h-[160px] md:min-h-[185px] flex-col gap-2 p-4 transition-colors duration-250 relative",
 					day.isCurrentMonth
 						? "bg-card"
-						: "bg-zinc-50/30 dark:bg-zinc-950/10",
+						: "bg-muted/30",
 					day.isToday &&
 						"bg-indigo-50/20 dark:bg-indigo-950/10 ring-1 ring-indigo-600/20 z-10",
-					"hover:bg-zinc-50/40 dark:hover:bg-zinc-800/40",
+					"hover:bg-accent/40",
 				)}
 			>
 				<!-- Day Header inside cell -->
@@ -170,7 +170,7 @@
 							<button
 								type="button"
 								onclick={() => openDetails(booking)}
-								class="w-full bg-zinc-100 hover:bg-zinc-200/80 dark:bg-zinc-800 dark:hover:bg-zinc-700 border border-zinc-200/50 dark:border-zinc-700 rounded px-2.5 py-1.5 text-left transition-colors duration-150 cursor-pointer select-none"
+								class="w-full bg-muted hover:bg-muted/80 dark:bg-muted dark:hover:bg-accent border border-border/50 rounded px-2.5 py-1.5 text-left transition-colors duration-150 cursor-pointer select-none"
 							>
 								<p
 									class="truncate text-sm leading-normal text-foreground font-['Prompt',sans-serif]"
@@ -214,13 +214,13 @@
 		transition:fade={{ duration: 150 }}
 	>
 		<div
-			class="bg-card border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-xl w-full max-w-md overflow-hidden flex flex-col"
+			class="bg-card border border-border rounded-xl shadow-xl w-full max-w-md overflow-hidden flex flex-col"
 			onclick={(e) => e.stopPropagation()}
 			transition:slide={{ duration: 200 }}
 		>
 			<!-- Modal Header -->
 			<div
-				class="px-6 py-4 border-b border-zinc-100 dark:border-zinc-800/85 flex items-center justify-between bg-zinc-50/50 dark:bg-zinc-950/20"
+				class="px-6 py-4 border-b border-border/85 flex items-center justify-between bg-muted/50"
 			>
 				<h3
 					class="font-bold text-foreground text-sm tracking-wide uppercase font-['Prompt',sans-serif]"
@@ -230,7 +230,7 @@
 				<button
 					type="button"
 					onclick={() => (selectedBooking = null)}
-					class="text-foreground/50 hover:text-foreground cursor-pointer w-6 h-6 flex items-center justify-center rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+					class="text-foreground/50 hover:text-foreground cursor-pointer w-6 h-6 flex items-center justify-center rounded-full hover:bg-accent transition-colors"
 				>
 					✕
 				</button>
@@ -272,7 +272,7 @@
 
 				<!-- Booker Info / Edit Booker Name -->
 				<div
-					class="space-y-1.5 border-t border-zinc-100 dark:border-zinc-800/60 pt-4"
+					class="space-y-1.5 border-t border-border/60 pt-4"
 				>
 					<span
 						class="text-[14px] uppercase tracking-wider text-foreground/55 flex items-center justify-between"
@@ -298,7 +298,7 @@
 								type="text"
 								bind:value={editBookerName}
 								placeholder="ระบุชื่อผู้จองใหม่"
-								class="flex-1 px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-indigo-600 focus:border-indigo-600 font-medium text-xs"
+								class="flex-1 px-3 py-1.5 rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-indigo-600 focus:border-indigo-600 font-medium text-xs"
 							/>
 							<button
 								type="button"
@@ -315,7 +315,7 @@
 									editBookerName =
 										selectedBooking?.bookerName || "";
 								}}
-								class="px-3 py-1.5 border border-zinc-200 dark:border-zinc-800 text-foreground/70 rounded-lg font-medium text-xs cursor-pointer"
+								class="px-3 py-1.5 border border-border text-foreground/70 rounded-lg font-medium text-xs cursor-pointer"
 							>
 								ยกเลิก
 							</button>
@@ -335,7 +335,7 @@
 
 				{#if selectedBooking.detailLabel}
 					<div
-						class="space-y-1 border-t border-zinc-100 dark:border-zinc-800/60 pt-4"
+						class="space-y-1 border-t border-border/60 pt-4"
 					>
 						<span
 							class="text-[10px] font-bold uppercase tracking-wider text-foreground/55"
@@ -352,7 +352,7 @@
 
 			<!-- Modal Footer -->
 			<div
-				class="px-6 py-4 border-t border-zinc-100 dark:border-zinc-800/85 bg-zinc-50/50 dark:bg-zinc-950/20 flex items-center justify-between"
+				class="px-6 py-4 border-t border-border/85 bg-muted/50 flex items-center justify-between"
 			>
 				<div>
 					{#if isAdmin}
@@ -369,7 +369,7 @@
 				<button
 					type="button"
 					onclick={() => (selectedBooking = null)}
-					class="px-4 py-2 border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors text-foreground/80 rounded-lg text-xs font-bold cursor-pointer"
+					class="px-4 py-2 border border-border hover:bg-accent transition-colors text-foreground/80 rounded-lg text-xs font-bold cursor-pointer"
 				>
 					ปิดหน้าต่าง
 				</button>

@@ -54,6 +54,7 @@
 		}
 	});
 
+	// Trigger confirmation on form submit
 	function handleConfirm() {
 		if (accepted && !submitting) {
 			onConfirm();
@@ -67,11 +68,11 @@
 
 <Dialog.Root bind:open>
 	<Dialog.Content
-		class="sm:max-w-[480px] p-6 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-xl"
+		class="sm:max-w-[480px] p-6 bg-card border border-border rounded-2xl shadow-xl animate-in fade-in duration-200"
 	>
 		<Dialog.Header class="space-y-2">
 			<Dialog.Title
-				class="text-lg font-bold text-zinc-900 dark:text-zinc-50 flex items-center gap-2"
+				class="text-lg font-bold text-foreground flex items-center gap-2"
 			>
 				<div
 					class="h-8 w-8 rounded-full bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center"
@@ -80,35 +81,31 @@
 				</div>
 				ยืนยันการส่งคำขอจองห้อง
 			</Dialog.Title>
-			<Dialog.Description
-				class="text-xs text-zinc-500 dark:text-zinc-400"
-			>
+			<Dialog.Description class="text-xs text-muted-foreground">
 				โปรดตรวจสอบรายละเอียดและยอมรับข้อตกลงก่อนส่งคำขอจองห้องประชุม
 			</Dialog.Description>
 		</Dialog.Header>
 
 		<div
-			class="my-4 space-y-3.5 border-y border-zinc-100 dark:border-zinc-800 py-4 max-h-[180px] overflow-y-auto pr-1 scrollbar-thin"
+			class="my-4 space-y-3.5 border-y border-border py-4 max-h-[180px] overflow-y-auto pr-1 scrollbar-thin"
 		>
 			<!-- Room -->
 			<div class="flex items-start gap-3">
 				<div
-					class="p-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 mt-0.5"
+					class="p-1.5 rounded-lg bg-muted text-muted-foreground mt-0.5"
 				>
 					<MapPin class="h-4 w-4" />
 				</div>
 				<div class="flex-1 min-w-0">
 					<p
-						class="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider"
+						class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider"
 					>
 						ห้องเรียน / ห้องประชุม
 					</p>
-					<p
-						class="text-sm font-semibold text-zinc-800 dark:text-zinc-200 truncate"
-					>
+					<p class="text-sm font-semibold text-foreground truncate">
 						{roomName || "ยังไม่ได้เลือกห้อง"} ,
 						<span
-							class="text-xs font-semibold text-foreground dark:text-zinc-500"
+							class="text-xs font-semibold text-muted-foreground"
 							>({roomLocation})</span
 						>
 					</p>
@@ -118,19 +115,17 @@
 			<!-- Date & Time -->
 			<div class="flex items-start gap-3">
 				<div
-					class="p-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 mt-0.5"
+					class="p-1.5 rounded-lg bg-muted text-muted-foreground mt-0.5"
 				>
 					<Clock class="h-4 w-4" />
 				</div>
 				<div class="flex-1 min-w-0">
 					<p
-						class="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider"
+						class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider"
 					>
 						วันและเวลา
 					</p>
-					<p
-						class="text-sm font-semibold text-zinc-800 dark:text-zinc-200"
-					>
+					<p class="text-sm font-semibold text-foreground">
 						{date} ({startTime} - {endTime} น.)
 					</p>
 				</div>
@@ -139,19 +134,17 @@
 			<!-- Title -->
 			<div class="flex items-start gap-3">
 				<div
-					class="p-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 mt-0.5"
+					class="p-1.5 rounded-lg bg-muted text-muted-foreground mt-0.5"
 				>
 					<FileText class="h-4 w-4" />
 				</div>
 				<div class="flex-1 min-w-0">
 					<p
-						class="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider"
+						class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider"
 					>
 						หัวข้อการจอง
 					</p>
-					<p
-						class="text-sm font-medium text-zinc-800 dark:text-zinc-200 break-words"
-					>
+					<p class="text-sm font-medium text-foreground break-words">
 						{title || "ไม่ระบุหัวข้อ"}
 					</p>
 				</div>
@@ -161,19 +154,17 @@
 			{#if customBookerName}
 				<div class="flex items-start gap-3">
 					<div
-						class="p-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 mt-0.5"
+						class="p-1.5 rounded-lg bg-muted text-muted-foreground mt-0.5"
 					>
 						<User class="h-4 w-4" />
 					</div>
 					<div class="flex-1 min-w-0">
 						<p
-							class="text-xs text-zinc-400 dark:text-zinc-500 uppercase tracking-wider"
+							class="text-xs text-muted-foreground uppercase tracking-wider"
 						>
 							ผู้จอง
 						</p>
-						<p
-							class="text-sm text-zinc-800 dark:text-zinc-200 truncate"
-						>
+						<p class="text-sm text-foreground truncate">
 							{customBookerName}
 						</p>
 					</div>
@@ -184,13 +175,13 @@
 			{#if isRecurring}
 				<div class="flex items-start gap-3">
 					<div
-						class="p-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 mt-0.5"
+						class="p-1.5 rounded-lg bg-muted text-muted-foreground mt-0.5"
 					>
 						<RefreshCw class="h-4 w-4" />
 					</div>
 					<div class="flex-1 min-w-0">
 						<p
-							class="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider"
+							class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider"
 						>
 							การจองซ้ำ (Weekly)
 						</p>
@@ -199,9 +190,7 @@
 						>
 							จองซ้ำทุกวัน {recurringDaysText}
 						</p>
-						<p
-							class="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5"
-						>
+						<p class="text-[11px] text-muted-foreground mt-0.5">
 							จนถึงวันที่: {recurringUntil}
 						</p>
 					</div>
@@ -212,18 +201,18 @@
 			{#if notes}
 				<div class="flex items-start gap-3">
 					<div
-						class="p-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 mt-0.5"
+						class="p-1.5 rounded-lg bg-muted text-muted-foreground mt-0.5"
 					>
 						<FileText class="h-4 w-4" />
 					</div>
 					<div class="flex-1 min-w-0">
 						<p
-							class="text-xs font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider"
+							class="text-xs font-semibold text-muted-foreground uppercase tracking-wider"
 						>
 							รายละเอียดเพิ่มเติม
 						</p>
 						<p
-							class="text-sm text-zinc-650 dark:text-zinc-350 whitespace-pre-wrap"
+							class="text-sm text-foreground/80 whitespace-pre-wrap"
 						>
 							{notes}
 						</p>
@@ -235,22 +224,18 @@
 		<!-- Guidelines / Agreements Section -->
 		<div class="flex flex-col gap-3 my-4">
 			<Card.Root
-				class="p-3 bg-zinc-50/50 dark:bg-amber-800/40 border-zinc-200 dark:border-zinc-800 rounded-xl shadow-none"
+				class="p-3 bg-amber-500/20 border-border rounded-xl shadow-none"
 			>
-				<p
-					class="text-base font-semibold text-zinc-800 dark:text-zinc-200"
-				>
+				<p class="text-base font-semibold text-foreground">
 					1.
 					ขอให้ตรวจสอบข้อมูลรายละเอียดการจองให้เรียบร้อยก่อนกดยืนยัน
 				</p>
 			</Card.Root>
 
 			<Card.Root
-				class="p-3 bg-zinc-50/50 dark:bg-amber-800/40 border-zinc-200 dark:border-zinc-800 rounded-xl shadow-none"
+				class="p-3 bg-amber-500/20 border-border rounded-xl shadow-none"
 			>
-				<p
-					class="text-base font-semibold text-zinc-800 dark:text-zinc-200 mb-1"
-				>
+				<p class="text-base font-semibold text-foreground mb-1">
 					2. กรณีขออนุญาตใช้ห้องปฏิบัติการนอกเวลาราชการ
 				</p>
 				<p class="text-muted-foreground text-xs pl-4 leading-normal">
@@ -269,10 +254,10 @@
 			<input
 				type="checkbox"
 				bind:checked={accepted}
-				class="h-4.5 w-4.5 mt-0.5 rounded border-zinc-300 dark:border-zinc-700 text-indigo-600 focus:ring-indigo-500 bg-white dark:bg-zinc-900 cursor-pointer"
+				class="h-4.5 w-4.5 mt-0.5 rounded border-border text-indigo-600 focus:ring-indigo-500 bg-card cursor-pointer"
 			/>
 			<span
-				class="text-xs text-zinc-650 dark:text-zinc-350 font-medium leading-tight"
+				class="text-xs text-muted-foreground font-medium leading-tight"
 			>
 				ฉันได้อ่านและยอมรับเงื่อนไขในการจองห้องปฏิบัติการข้างต้น
 			</span>
@@ -283,7 +268,7 @@
 				variant="outline"
 				onclick={handleClose}
 				disabled={submitting}
-				class="w-full sm:w-auto rounded-xl text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800 border-zinc-200 dark:border-zinc-800"
+				class="w-full sm:w-auto rounded-xl"
 			>
 				ยกเลิก
 			</Button>

@@ -13,7 +13,7 @@
 </script>
 
 <div
-	class="flex flex-col gap-4 border-b border-zinc-200 dark:border-zinc-800 pb-6 md:flex-row md:items-end md:justify-between"
+	class="flex flex-col gap-4 border-b border-border pb-6 md:flex-row md:items-end md:justify-between"
 >
 	<div class="space-y-1">
 		<div

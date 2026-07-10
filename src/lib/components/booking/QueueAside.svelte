@@ -34,13 +34,13 @@
 
 <aside class="flex flex-col gap-4">
 	<Card.Root
-		class="sticky top-20 border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 rounded-xl overflow-hidden shadow-xs"
+		class="sticky top-20 border-border bg-card rounded-xl overflow-hidden shadow-xs"
 	>
 		<Card.Header
-			class="border-b border-zinc-100 dark:border-zinc-800/80 px-6 py-4 flex flex-row items-center justify-between"
+			class="border-b border-border/80 px-6 py-4 flex flex-row items-center justify-between"
 		>
 			<Card.Title
-				class="text-sm font-semibold tracking-wide uppercase text-zinc-700 dark:text-zinc-300"
+				class="text-sm font-semibold tracking-wide uppercase text-foreground/80"
 			>
 				คิวการจองวันนี้
 			</Card.Title>
@@ -58,30 +58,30 @@
 					class="flex flex-col items-center justify-center text-center py-8 space-y-2"
 				>
 					<div
-						class="h-10 w-10 rounded-full bg-zinc-50 dark:bg-zinc-800 flex items-center justify-center text-zinc-400"
+						class="h-10 w-10 rounded-full bg-muted flex items-center justify-center text-muted-foreground"
 					>
 						<MapPin class="h-5 w-5" />
 					</div>
-					<p class="text-zinc-500 text-xs">
+					<p class="text-muted-foreground text-xs">
 						โปรดเลือกห้องประชุมเพื่อเรียกดูตารางการจองวันนี้
 					</p>
 				</div>
 			{:else if loadingBookings}
 				<div
-					class="text-zinc-400 dark:text-zinc-500 flex items-center justify-center py-8 gap-2 text-xs"
+					class="text-muted-foreground flex items-center justify-center py-8 gap-2 text-xs"
 				>
 					<Loader2 class="h-4 w-4 animate-spin text-indigo-600" />
 					กำลังดึงรายการคิวจอง...
 				</div>
 			{:else if existingBookings.length === 0}
 				<div
-					class="border-zinc-200 dark:border-zinc-800 border-dashed bg-zinc-50/50 dark:bg-zinc-950/10 rounded-lg border-2 px-4 py-10 text-center text-xs flex flex-col items-center justify-center space-y-1.5"
+					class="border-border border-dashed bg-muted/40 rounded-lg border-2 px-4 py-10 text-center text-xs flex flex-col items-center justify-center space-y-1.5"
 				>
 					<CheckCircle2 class="h-6 w-6 text-emerald-500" />
-					<p class="font-semibold text-zinc-700 dark:text-zinc-300">
+					<p class="font-semibold text-foreground">
 						ห้องว่างตลอดทั้งวัน
 					</p>
-					<p class="text-zinc-400 dark:text-zinc-500">
+					<p class="text-muted-foreground">
 						สามารถเลือกเวลาใช้งานที่ต้องการได้ทันที
 					</p>
 				</div>
@@ -89,7 +89,7 @@
 				<!-- Vertical Queue Timeline -->
 				<div class="relative pl-5 space-y-4 py-1">
 					<div
-						class="absolute left-2 top-2 bottom-2 w-px bg-zinc-200 dark:bg-zinc-800"
+						class="absolute left-2 top-2 bottom-2 w-px bg-border"
 					></div>
 
 					{#each existingBookings as b (b.id)}
@@ -105,15 +105,15 @@
 							></div>
 
 							<div
-								class="bg-zinc-50/60 dark:bg-zinc-850 border border-zinc-100 dark:border-zinc-800/80 rounded-lg px-4 py-3"
+								class="bg-muted/40 border border-border/80 rounded-lg px-4 py-3"
 							>
 								<div
 									class="flex items-center justify-between gap-2 mb-1"
 								>
 									<span
-										class="font-mono text-[10px] font-bold text-zinc-600 dark:text-zinc-400 flex items-center gap-1 bg-zinc-200/50 dark:bg-zinc-800 px-2 py-0.5 rounded"
+										class="font-mono text-[10px] font-bold text-muted-foreground flex items-center gap-1 bg-muted px-2 py-0.5 rounded"
 									>
-										<Clock class="h-3 w-3 text-zinc-400" />
+										<Clock class="h-3 w-3 text-muted-foreground/75" />
 										{formatTime(b.start_time)} - {formatTime(b.end_time)}
 									</span>
 
@@ -126,7 +126,7 @@
 								</div>
 
 								<h4
-									class="text-xs font-bold text-zinc-850 dark:text-zinc-200 line-clamp-1"
+									class="text-xs font-bold text-foreground line-clamp-1"
 								>
 									{b.title}
 								</h4>
@@ -134,9 +134,9 @@
 								<div class="mt-2 space-y-1 text-[10px]">
 									{#if b.bookerName || b.bookerEmail || b.booker_email}
 										<div
-											class="text-zinc-500 flex items-center gap-1.5 truncate"
+											class="text-muted-foreground flex items-center gap-1.5 truncate"
 										>
-											<Users class="h-3 w-3 text-zinc-400" />
+											<Users class="h-3 w-3 text-muted-foreground/75" />
 											<span class="truncate">
 												{b.bookerName || b.bookerEmail || b.booker_email}
 											</span>
@@ -145,9 +145,9 @@
 
 									{#if b.detailLabel}
 										<div
-											class="text-zinc-500 flex items-start gap-1.5 truncate"
+											class="text-muted-foreground flex items-start gap-1.5 truncate"
 										>
-											<FileText class="h-3 w-3 text-zinc-400" />
+											<FileText class="h-3 w-3 text-muted-foreground/75" />
 											<span class="truncate">{b.detailLabel}</span>
 										</div>
 									{/if}
@@ -158,7 +158,7 @@
 				</div>
 			{/if}
 
-			<Separator class="my-4 border-zinc-100 dark:border-zinc-800/60" />
+			<Separator class="my-4 border-border/60" />
 		</Card.Content>
 	</Card.Root>
 </aside>

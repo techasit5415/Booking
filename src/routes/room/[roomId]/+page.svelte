@@ -50,7 +50,7 @@
 </svelte:head>
 
 <div
-	class="min-h-screen w-screen bg-slate-50 dark:bg-zinc-950 text-zinc-900 dark:text-slate-100 font-['Inter','Prompt',sans-serif] antialiased transition-colors duration-300"
+	class="min-h-screen w-screen bg-background text-foreground font-['Inter','Prompt',sans-serif] antialiased transition-colors duration-300"
 >
 	<div class="mx-auto flex min-h-screen max-w-[1300px] flex-col gap-6 px-6 py-6 md:px-10 md:py-8">
 		<!-- 1. Header -->

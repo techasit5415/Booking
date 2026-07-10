@@ -103,7 +103,7 @@
 			handleRoomChange={(val) => flow.handleRoomChange(val)}
 		/>
 
-		<Separator class="border-zinc-200 dark:border-zinc-800" />
+		<Separator class="border-border" />
 
 		<!-- ============ CALENDAR ============ -->
 		<main class="flex-1">

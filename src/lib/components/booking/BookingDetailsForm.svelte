@@ -19,10 +19,10 @@
 </script>
 
 <Card.Root
-	class="border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 rounded-xl overflow-hidden shadow-xs"
+	class="border-border bg-card rounded-xl overflow-hidden shadow-xs"
 >
 	<Card.Header
-		class="border-b border-zinc-100 dark:border-zinc-800/80 px-6 py-4 flex items-center"
+		class="border-b border-border/80 px-6 py-4 flex items-center"
 	>
 		<div class="flex items-center gap-2">
 			<span
@@ -31,7 +31,7 @@
 				3
 			</span>
 			<Card.Title
-				class="text-sm font-semibold tracking-wide uppercase text-zinc-700 dark:text-zinc-300"
+				class="text-sm font-semibold tracking-wide uppercase text-foreground/80"
 			>
 				รายละเอียดการใช้งาน
 			</Card.Title>
@@ -42,7 +42,7 @@
 		<div class="flex flex-col gap-1.5">
 			<Label
 				for="book-title"
-				class="text-xs font-semibold text-zinc-700 dark:text-zinc-300"
+				class="text-xs font-semibold text-foreground/80"
 			>
 				หัวข้อการจอง <span class="text-destructive font-bold">*</span>
 			</Label>
@@ -52,7 +52,7 @@
 				bind:value={title}
 				placeholder="เช่น Marketing Team Sync-up, ประชุมปรึกษางาน"
 				maxlength={200}
-				class="rounded-lg border-zinc-200 dark:border-zinc-800 focus-visible:ring-indigo-600/10 focus-visible:border-indigo-600"
+				class="rounded-lg border-border focus-visible:ring-indigo-600/10 focus-visible:border-indigo-600"
 			/>
 		</div>
 
@@ -60,7 +60,7 @@
 			<div class="flex flex-col gap-1.5" transition:slide>
 				<Label
 					for="booker-name-custom"
-					class="text-xs font-semibold text-zinc-700 dark:text-zinc-300"
+					class="text-xs font-semibold text-foreground/80"
 				>
 					ระบุชื่อผู้จอง (ในนามบุคคลอื่น - เฉพาะผู้ดูแลระบบ)
 				</Label>
@@ -70,7 +70,7 @@
 					bind:value={customBookerName}
 					placeholder="ดร. เรียนดี "
 					maxlength={100}
-					class="rounded-lg border-zinc-200 dark:border-zinc-800 focus-visible:ring-indigo-600/10 focus-visible:border-indigo-600"
+					class="rounded-lg border-border focus-visible:ring-indigo-600/10 focus-visible:border-indigo-600"
 				/>
 			</div>
 		{/if}
@@ -78,9 +78,9 @@
 		<div class="flex flex-col gap-1.5">
 			<Label
 				for="book-notes"
-				class="text-xs font-semibold text-zinc-700 dark:text-zinc-300"
+				class="text-xs font-semibold text-foreground/80"
 			>
-				รายละเอียดอื่น ๆ <span class="text-zinc-400 font-normal">(ไม่บังคับ)</span>
+				รายละเอียดอื่น ๆ <span class="text-muted-foreground font-normal">(ไม่บังคับ)</span>
 			</Label>
 			<Textarea
 				id="book-notes"
@@ -88,7 +88,7 @@
 				placeholder="เช่น ระบุจำนวนผู้เข้าร่วม หรืออุปกรณ์เสริมที่ต้องการเพิ่มเติม"
 				rows={3}
 				maxlength={500}
-				class="resize-none rounded-lg border-zinc-200 dark:border-zinc-800 focus-visible:ring-indigo-600/10 focus-visible:border-indigo-600"
+				class="resize-none rounded-lg border-border focus-visible:ring-indigo-600/10 focus-visible:border-indigo-600"
 			/>
 		</div>
 	</Card.Content>
