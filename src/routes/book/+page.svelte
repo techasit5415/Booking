@@ -22,6 +22,7 @@
 	} from "$lib/components/ui/alert";
 	import { Separator } from "$lib/components/ui/separator";
 	import { toast } from "svelte-sonner";
+	import BookingConfirmDialog from "$lib/components/BookingConfirmDialog.svelte";
 
 	import {
 		CheckCircle2,
@@ -79,6 +80,23 @@
 	let recurringUntil = $state<string>("");
 	let recurringDays = $state<number[]>([]);
 	let customBookerName = $state("");
+	let showConfirm = $state(false);
+
+	const THAI_DAYS = [
+		"อาทิตย์",
+		"จันทร์",
+		"อังคาร",
+		"พุธ",
+		"พฤหัสบดี",
+		"ศุกร์",
+		"เสาร์",
+	];
+	const recurringDaysText = $derived(
+		recurringDays
+			.map((d) => THAI_DAYS[d])
+			.filter(Boolean)
+			.join(", "),
+	);
 
 	function getDayOfWeek(dateStr: string): number {
 		if (!dateStr) return 1;
@@ -284,6 +302,24 @@
 				return;
 			}
 
+			// Open the confirmation dialog
+			showConfirm = true;
+		} catch (err: any) {
+			console.error("Validation/Overlap check failed", err);
+			submitError = err.message || "เกิดข้อผิดพลาดในการตรวจสอบห้อง";
+			toast.error("ตรวจสอบข้อมูลไม่สำเร็จ", {
+				description: submitError ?? "",
+			});
+		} finally {
+			submitting = false;
+		}
+	}
+
+	async function executeSubmit() {
+		submitting = true;
+		validationError = null;
+		submitError = null;
+		try {
 			const response = await fetch("/api/bookings", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
@@ -319,12 +355,14 @@
 				description: "รอผู้ดูแลอนุมัติ",
 			});
 
+			showConfirm = false;
 			await loadBookingsForSelected();
 		} catch (err: any) {
 			console.error("Submit failed", err);
 			submitError =
 				err.message || "ส่งคำขอไม่สำเร็จ กรุณาลองใหม่อีกครั้ง";
 			toast.error("ส่งคำขอไม่สำเร็จ", { description: submitError ?? "" });
+			showConfirm = false;
 		} finally {
 			submitting = false;
 		}
@@ -859,7 +897,7 @@
 										id="booker-name-custom"
 										type="text"
 										bind:value={customBookerName}
-										placeholder="เช่น ดร.ประพจน์ ศรีนุวัติวงศ์"
+										placeholder="ดร. เรียนดี "
 										maxlength={100}
 										class="rounded-lg border-zinc-200 dark:border-zinc-800 focus-visible:ring-indigo-600/10 focus-visible:border-indigo-600"
 									/>
@@ -887,27 +925,7 @@
 							</div>
 						</Card.Content>
 					</Card.Root>
-					<div class="flex flex-col gap-4">
-						<Card.Root class="p-4">
-							<p class="font-semibold mb-1">
-								1.
-								ขอให้ตรวจสอบข้อมูลรายละเอียดการจองให้เรียบร้อยก่อนกดยืนยัน
-							</p>
-						</Card.Root>
 
-						<Card.Root class="p-4">
-							<p class="font-semibold mb-1">
-								2. กรณีขออนุญาตใช้ห้องปฏิบัติการนอกเวลาราชการ
-							</p>
-							<p class="text-muted-foreground text-sm pl-4">
-								หากวัสดุ อุปกรณ์
-								ครุภัณฑ์ที่อยู่ภายในห้องปฏิบัติการ เกิดการชำรุด
-								เสียหาย หรือสูญหาย
-								ให้นักศึกษาและอาจารย์ผู้ขออนุญาตเป็นผู้รับผิดชอบ
-								ชดใช้ค่าเสียหายทั้งหมด
-							</p>
-						</Card.Root>
-					</div>
 					<!-- Notifications & Validation alerts -->
 					{#if validationError}
 						<Alert
@@ -1122,4 +1140,21 @@
 			</form>
 		{/if}
 	</div>
+
+	<BookingConfirmDialog
+		bind:open={showConfirm}
+		roomName={getRoomName(selectedRoomId)}
+		date={bookingDate}
+		{startTime}
+		{endTime}
+		{title}
+		{notes}
+		{isRecurring}
+		{recurringUntil}
+		{recurringDaysText}
+		{customBookerName}
+		{submitting}
+		onConfirm={executeSubmit}
+		onClose={() => (showConfirm = false)}
+	/>
 </div>

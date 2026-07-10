@@ -91,6 +91,23 @@ async function fetchFreshUserFromPb(email: string): Promise<AuthUser | null> {
             user_type: fresh.user_type ?? '',
         };
     } catch (err) {
+        // ลองค้นหาใน collection _superusers เผื่อเป็นผู้ดูแลระบบหลัก (PocketBase Superuser)
+        try {
+            const safe = email.replace(/"/g, '\\"');
+            const superuser = await pb.collection('_superusers').getFirstListItem(`email = "${safe}"`);
+            if (superuser?.id && superuser?.email) {
+                return {
+                    id: superuser.id,
+                    email: superuser.email,
+                    name: 'Administrator',
+                    username: 'admin',
+                    user_type: '000000000000009',
+                };
+            }
+        } catch {
+            // ละเว้นหากค้นหาใน _superusers ไม่พบเช่นกัน
+        }
+
         console.warn('[auth] PB re-fetch by email failed:', err instanceof Error ? err.message : err);
         return null;
     }
