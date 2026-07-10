@@ -18,7 +18,11 @@
 	import { BookingFlow } from "$lib/components/booking/BookingFlow.svelte";
 
 	// Import UI components remaining in shell
-	import { Alert, AlertTitle, AlertDescription } from "$lib/components/ui/alert";
+	import {
+		Alert,
+		AlertTitle,
+		AlertDescription,
+	} from "$lib/components/ui/alert";
 	import { Button } from "$lib/components/ui/button";
 	import { AlertCircle, Loader2, CalendarPlus } from "@lucide/svelte";
 
@@ -90,7 +94,7 @@
 				<h1
 					class="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50"
 				>
-					จองห้องประชุม
+					จองห้อง
 				</h1>
 				<p class="text-zinc-500 dark:text-zinc-400 text-sm">
 					เลือกห้องเรียน/ห้องประชุม ระบุวันเวลา
@@ -197,6 +201,7 @@
 	<BookingConfirmDialog
 		bind:open={flow.showConfirm}
 		roomName={flow.getRoomName(flow.selectedRoomId)}
+		roomLocation={flow.getRoomLocation(flow.selectedRoomId)}
 		date={flow.bookingDate}
 		startTime={flow.startTime}
 		endTime={flow.endTime}

@@ -238,4 +238,8 @@ export class BookingFlow {
 	getRoomName(id: string): string {
 		return this.rooms.find((r) => r.id === id)?.name ?? "";
 	}
+
+	getRoomLocation(id: string): string {
+		return this.rooms.find((r) => r.id === id)?.location ?? "";
+	}
 }

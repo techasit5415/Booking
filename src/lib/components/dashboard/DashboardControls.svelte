@@ -50,7 +50,8 @@
 					class="w-[200px] rounded-lg border-zinc-200 dark:border-zinc-800"
 				>
 					<Select.Value placeholder="กำลังโหลด...">
-						{rawRooms.find((r) => r.id === selectedRoomId)?.name || "กำลังโหลด..."}
+						{rawRooms.find((r) => r.id === selectedRoomId)?.name ||
+							"กำลังโหลด..."}
 					</Select.Value>
 				</Select.Trigger>
 				<Select.Content class="rounded-lg shadow-lg">
@@ -72,7 +73,7 @@
 			class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg"
 		>
 			<CalendarPlus class="h-4 w-4 mr-2" />
-			จองห้องเรียนนี้
+			จองห้อง
 		</Button>
 
 		<!-- Month Navigator -->
