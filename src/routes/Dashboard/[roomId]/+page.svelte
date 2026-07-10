@@ -13,6 +13,8 @@
 	import type { Room, Booking } from "$lib/types";
 
 	const pocketbaseUrl = env.PUBLIC_POCKETBASE_URL || "";
+	const user = $derived(page.data.user);
+	const isAdmin = $derived(user?.isAdmin ?? false);
 	const CALENDAR_CELLS = 42; // 6 weeks × 7 days
 
 	// Hoisted formatters (สร้างครั้งเดียว reuse ได้)
@@ -61,9 +63,57 @@
 	let calendarDays = $state<any[]>([]);
 	let clockText = $state("");
 	let dateText = $state("");
-	let currentMonthName = $state("");
 	let rawRooms = $state<Room[]>([]);
 	let pb: PocketBase | null = null;
+
+	let selectedYear = $state(new Date().getFullYear());
+	let selectedMonth = $state(new Date().getMonth());
+
+	const monthNames = [
+		"มกราคม",
+		"กุมภาพันธ์",
+		"มีนาคม",
+		"เมษายน",
+		"พฤษภาคม",
+		"มิถุนายน",
+		"กรกฎาคม",
+		"สิงหาคม",
+		"กันยายน",
+		"ตุลาคม",
+		"พฤศจิกายน",
+		"ธันวาคม",
+	];
+
+	function prevMonth() {
+		if (selectedMonth === 0) {
+			selectedMonth = 11;
+			selectedYear -= 1;
+		} else {
+			selectedMonth -= 1;
+		}
+	}
+
+	function nextMonth() {
+		if (selectedMonth === 11) {
+			selectedMonth = 0;
+			selectedYear += 1;
+		} else {
+			selectedMonth += 1;
+		}
+	}
+
+	function goToCurrentMonth() {
+		const now = new Date();
+		selectedMonth = now.getMonth();
+		selectedYear = now.getFullYear();
+	}
+
+	const displayMonthName = $derived(
+		new Date(selectedYear, selectedMonth, 1).toLocaleDateString("th-TH", {
+			month: "long",
+			year: "numeric",
+		}),
+	);
 
 	let currentRoomName = $derived(
 		rawRooms.find((r) => r.id === currentRoomId)?.name ??
@@ -86,9 +136,9 @@
 		roomsList: Room[],
 		bookingsList: Booking[],
 	) {
+		const year = selectedYear;
+		const month = selectedMonth;
 		const now = new Date();
-		const year = now.getFullYear();
-		const month = now.getMonth();
 
 		const firstDayOfMonth = new Date(year, month, 1);
 		const startOffset = firstDayOfMonth.getDay();
@@ -166,9 +216,13 @@
 					}
 
 					return {
+						id: b.id,
 						title: b.title || "Untitled",
 						time: displayTime,
 						roomName: roomInfo ? roomInfo.name : "Unknown Room",
+						bookerName: b.bookerName ?? "",
+						bookerEmail: b.bookerEmail ?? "",
+						detailLabel: b.detailLabel ?? "",
 					};
 				});
 
@@ -196,9 +250,6 @@
 				month: "long",
 				year: "numeric",
 			});
-			currentMonthName = now.toLocaleDateString("th-TH", {
-				month: "long",
-			});
 		}
 
 		updateClock();
@@ -209,9 +260,11 @@
 		};
 	});
 
-	// ✨ Reactive data fetching - re-run เมื่อ currentRoomId เปลี่ยน
+	// ✨ Reactive data fetching - re-run เมื่อ currentRoomId หรือเดือน/ปี เปลี่ยน
 	$effect(() => {
 		const roomId = currentRoomId;
+		const year = selectedYear;
+		const month = selectedMonth;
 		if (!roomId || !pocketbaseUrl) return;
 
 		let cancelled = false;
@@ -303,28 +356,28 @@
 		>
 			<div class="space-y-1">
 				<div
-					class="text-zinc-500 dark:text-zinc-400 text-xs font-bold tracking-wider uppercase flex items-center gap-1"
+					class="text-foreground/60 text-xs font-bold tracking-wider uppercase flex items-center gap-1"
 				>
-					Room Schedule · {currentMonthName}
+					Room Schedule · {displayMonthName}
 				</div>
 				<h1
-					class="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50"
+					class="text-2xl font-bold tracking-tight text-foreground"
 				>
 					{currentRoomName}
 				</h1>
-				<p class="text-zinc-500 dark:text-zinc-400 text-sm">
+				<p class="text-foreground/60 text-sm">
 					ตารางเวลาการจองใช้งานห้องประชุมรายเดือน
 				</p>
 			</div>
 
 			<div class="flex flex-col items-start gap-1 md:items-end">
 				<div
-					class="font-mono text-xl md:text-2xl font-bold text-zinc-800 dark:text-zinc-250 leading-none"
+					class="font-mono text-xl md:text-2xl font-bold text-foreground leading-none"
 				>
 					{clockText}
 				</div>
 				<div
-					class="text-zinc-400 dark:text-zinc-500 text-[10px] md:text-xs font-semibold uppercase tracking-wider mt-0.5"
+					class="text-foreground/45 text-[10px] md:text-xs font-semibold uppercase tracking-wider mt-0.5"
 				>
 					{dateText}
 				</div>
@@ -333,18 +386,18 @@
 
 		<!-- ============ CONTROLS ============ -->
 		<div
-			class="border border-zinc-200 dark:border-zinc-850 bg-card rounded-xl p-4 flex flex-col items-stretch gap-4 sm:flex-row sm:items-center sm:justify-between shadow-xs"
+			class="border border-zinc-200 dark:border-zinc-800 bg-card rounded-xl p-4 flex flex-col items-stretch gap-4 sm:flex-row sm:items-center sm:justify-between shadow-xs"
 		>
 			<!-- Room selector -->
 			<div class="flex flex-wrap items-center gap-4">
 				<div class="flex items-center gap-3">
 					<label
 						for="room-select"
-						class="text-zinc-650 dark:text-zinc-400 text-xs font-bold tracking-wider uppercase font-['Prompt',sans-serif]"
+						class="text-foreground/70 text-xs font-bold tracking-wider uppercase font-['Prompt',sans-serif]"
 					>
 						เลือกห้อง:
 					</label>
-
+ 
 					<Select.Root
 						bind:value={selectedRoomId}
 						onValueChange={handleRoomChange}
@@ -353,9 +406,12 @@
 							id="room-select"
 							class="w-[200px] rounded-lg border-zinc-200 dark:border-zinc-800"
 						>
-							<Select.Value placeholder="กำลังโหลด..." />
+							<Select.Value placeholder="กำลังโหลด...">
+								{rawRooms.find((r) => r.id === selectedRoomId)
+									?.name || "กำลังโหลด..."}
+							</Select.Value>
 						</Select.Trigger>
-						<Select.Content class="rounded-lg shadow-lg">
+						<Select.Content class="rounded-lg shadow-lg ">
 							{#each rawRooms as room (room.id)}
 								<Select.Item
 									value={room.id}
@@ -376,18 +432,55 @@
 					<CalendarPlus class="h-4 w-4 mr-2" />
 					จองห้องเรียนนี้
 				</Button>
-			</div>
 
+				<!-- Month Navigator -->
+				<div
+					class="flex items-center gap-2 sm:border-l sm:border-zinc-200 dark:sm:border-zinc-800 sm:pl-4"
+				>
+					<Button
+						variant="outline"
+						size="icon"
+						onclick={prevMonth}
+						class="h-9 w-9 rounded-lg border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800 cursor-pointer"
+						title="เดือนก่อนหน้า"
+					>
+						&lt;
+					</Button>
+					<span
+						class="text-xs font-bold min-w-[130px] text-center text-foreground/80 font-['Prompt',sans-serif] uppercase tracking-wider"
+					>
+						{monthNames[selectedMonth]}
+						{selectedYear + 543}
+					</span>
+					<Button
+						variant="outline"
+						size="icon"
+						onclick={nextMonth}
+						class="h-9 w-9 rounded-lg border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800 cursor-pointer"
+						title="เดือนถัดไป"
+					>
+						&gt;
+					</Button>
+					<Button
+						variant="ghost"
+						size="sm"
+						onclick={goToCurrentMonth}
+						class="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50/50 dark:hover:bg-indigo-950/20 cursor-pointer"
+					>
+						เดือนนี้
+					</Button>
+				</div>
+			</div>
 			<div class="flex items-center gap-3">
 				<ThemeToggle />
 			</div>
 		</div>
 
-		<Separator class="border-zinc-200 dark:border-zinc-850" />
+		<Separator class="border-zinc-200 dark:border-zinc-800" />
 
 		<!-- ============ CALENDAR ============ -->
 		<main class="flex-1">
-			<MonthlyStatusCalendar {calendarDays} />
+			<MonthlyStatusCalendar {calendarDays} {isAdmin} />
 		</main>
 	</div>
 </div>

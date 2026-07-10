@@ -7,6 +7,8 @@ type AuthUser = {
     email: string;
     name: string;
     username?: string;
+    user_type?: string;
+    isAdmin?: boolean;
 };
 
 type PbAuthCookie = {
@@ -86,6 +88,7 @@ async function fetchFreshUserFromPb(email: string): Promise<AuthUser | null> {
             email: fresh.email,
             name: fresh.name ?? '',
             username: fresh.username,
+            user_type: fresh.user_type ?? '',
         };
     } catch (err) {
         console.warn('[auth] PB re-fetch by email failed:', err instanceof Error ? err.message : err);
@@ -127,23 +130,21 @@ export const handle: Handle = async ({ event, resolve }) => {
         return resolve(event);
     }
 
-    // 4) เริ่มจาก cookie (fast path)
-    let user: AuthUser = {
-        id: model.id,
-        email: model.email,
-        name: model.name ?? '',
-        username: model.username,
-    };
+	// 4) ลองดึงจาก database เสมอเพื่อความอัปเดตของ Role/ข้อมูลผู้ใช้
+	let user: AuthUser | null = await fetchFreshUserFromPb(model.email);
+	
+	// ถ้าดึงไม่ได้ (เช่น DB ล่ม) ให้ใช้ข้อมูลจาก Cookie เป็น Fallback
+	if (!user) {
+		user = {
+			id: model.id,
+			email: model.email,
+			name: model.name ?? '',
+			username: model.username,
+			user_type: model.user_type ?? '',
+		};
+	}
 
-    // 5) ถ้า cookie ไม่มีชื่อ (PB record เก่า/ว่าง) → ลอง fetch จาก PB ด้วย email
-    if (!user.name.trim()) {
-        const fresh = await fetchFreshUserFromPb(model.email);
-        if (fresh && fresh.name.trim()) {
-            user = fresh;
-        }
-    }
-
-    event.locals.user = user;
+	event.locals.user = user;
     userCache.set(token, { user, expires: Date.now() + CACHE_TTL_MS });
     return resolve(event);
 };

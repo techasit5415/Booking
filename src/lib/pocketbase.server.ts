@@ -118,7 +118,8 @@ export async function loginWithKmitlCode(code: string): Promise<KmitlLoginResult
 			id: freshUser.id,
 			email: freshUser.email,
 			name: freshUser.name ?? '',
-			username: freshUser.username
+			username: freshUser.username,
+			user_type: freshUser.user_type ?? ''
 		}
 	};
 }

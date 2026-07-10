@@ -106,7 +106,7 @@
 			</Badge>
 
 			{#if bookingViewState !== 'idle'}
-				<span class="font-mono text-xs font-bold text-zinc-650 dark:text-zinc-400 bg-zinc-50 dark:bg-zinc-850 border border-zinc-200 dark:border-zinc-800 px-2 py-0.5 rounded">
+				<span class="font-mono text-xs font-bold text-zinc-650 dark:text-zinc-400 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-800 px-2 py-0.5 rounded">
 					{currentBooking.startTime} - {currentBooking.endTime}
 				</span>
 			{/if}

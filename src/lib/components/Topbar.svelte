@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import { CalendarPlus, LogOut, User } from '@lucide/svelte';
+	import { CalendarPlus, LogOut, User, LayoutDashboard } from '@lucide/svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Separator } from '$lib/components/ui/separator';
 	import ThemeToggle from './ThemeToggle.svelte';
@@ -55,6 +55,16 @@
 
 			<!-- Right: actions + user info + logout -->
 			<div class="flex items-center gap-4">
+				<Button
+					href="/"
+					variant="outline"
+					size="sm"
+					class="gap-1.5 border-border/60 hover:bg-accent hover:text-accent-foreground transition-all duration-200 hover:-translate-y-0.5"
+				>
+					<LayoutDashboard class="h-4 w-4" />
+					ดูตารางใช้งาน
+				</Button>
+
 				<Button
 					href="/book"
 					variant="default"

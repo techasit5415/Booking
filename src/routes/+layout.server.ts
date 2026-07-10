@@ -1,7 +1,12 @@
 import type { LayoutServerLoad } from './$types';
+import { env } from '$env/dynamic/private';
 
 export const load: LayoutServerLoad = async ({ locals }) => {
+    const isAdmin = locals.user && (
+        locals.user.user_type === '000000000000009' ||
+        locals.user.email === env.USER_ADMIN
+    );
     return {
-        user: locals.user ?? null,
+        user: locals.user ? { ...locals.user, isAdmin } : null,
     };
 };

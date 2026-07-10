@@ -71,7 +71,7 @@ export const GET: RequestHandler = async ({ params, url }) => {
             sort: 'start_time',
         });
 
-        // 🔒 Sanitize: ตัด PII ออกให้หมด เหลือแค่ข้อมูลที่หน้า public ต้องแสดง
+        // 🔒 Sanitize: ส่ง bookerName, bookerEmail ให้ระบบแสดงผลรายละเอียดการจอง
         const bookings = records.map((r) => ({
             id: r.id,
             field: r.field,
@@ -80,7 +80,8 @@ export const GET: RequestHandler = async ({ params, url }) => {
             end_time: r.end_time,
             status: r.status,
             detailLabel: r.detailLabel ?? '',
-            // ไม่ส่ง bookerName, bookerEmail, booker_id — Pi/Dashboard ไม่ต้องแสดง PII
+            bookerName: r.bookerName ?? '',
+            bookerEmail: r.bookerEmail ?? '',
         }));
 
         return json({ bookings });

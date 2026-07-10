@@ -3,6 +3,8 @@ export interface AuthUser {
 	email: string;
 	name: string;
 	username?: string;
+	user_type?: string;
+	isAdmin?: boolean;
 }
 
 export interface KmitlTokenResponse {
@@ -34,5 +36,6 @@ export interface KmitlLoginResult {
 		email: string;
 		name: string;
 		username?: string;
+		user_type?: string;
 	};
 }

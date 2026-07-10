@@ -30,7 +30,7 @@
 			<div class="space-y-3">
 				{#each upcomingBookings as booking (booking.id)}
 					<div
-						class="bg-zinc-50 dark:bg-zinc-950/40 border border-zinc-100 dark:border-zinc-850 hover:bg-zinc-100/40 dark:hover:bg-zinc-950/70 transition-colors duration-200 flex items-center justify-between gap-4 rounded-lg px-4 py-3"
+						class="bg-zinc-50 dark:bg-zinc-950/40 border border-zinc-100 dark:border-zinc-800 hover:bg-zinc-100/40 dark:hover:bg-zinc-800/40 transition-colors duration-200 flex items-center justify-between gap-4 rounded-lg px-4 py-3"
 					>
 						<div class="min-w-0 flex-1 space-y-1">
 							<p class="truncate text-sm font-bold text-zinc-800 dark:text-zinc-200 font-['Prompt',sans-serif] tracking-tight">

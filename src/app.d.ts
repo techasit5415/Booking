@@ -5,6 +5,8 @@ type AuthUser = {
 	email: string;
 	name: string;
 	username?: string;
+	user_type?: string;
+	isAdmin?: boolean;
 };
 
 declare global {

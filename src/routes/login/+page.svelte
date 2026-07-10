@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { PUBLIC_KMITL_CLIENT_ID, PUBLIC_KMITL_REDIRECT_URI } from '$env/static/public';
-	import { AlertCircle, LogIn, CalendarRange } from '@lucide/svelte';
+	import { AlertCircle, LogIn, CalendarRange, LayoutDashboard } from '@lucide/svelte';
 	import { fade } from 'svelte/transition';
 
 	const errorMessage = page.url.searchParams.get('error');
@@ -65,14 +65,22 @@
 			{/if}
 
 			<!-- Actions -->
-			<div class="mt-8 space-y-6">
+			<div class="mt-8 space-y-4">
 				<button
 					onclick={redirectToKmitl}
-					class="flex w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white py-3 text-sm font-semibold transition-colors duration-200 shadow-sm"
+					class="flex w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white py-3 text-sm font-semibold transition-colors duration-200 shadow-sm cursor-pointer"
 				>
 					<LogIn class="h-4 w-4" />
 					ลงชื่อเข้าใช้งานด้วย KMITL Account
 				</button>
+
+				<a
+					href="/"
+					class="flex w-full items-center justify-center gap-2 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:bg-zinc-50 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 py-3 text-sm font-semibold transition-colors duration-200 shadow-xs text-center"
+				>
+					<LayoutDashboard class="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+					ดูตารางการใช้งานห้อง (Dashboard)
+				</a>
 
 				<div class="relative flex py-1 items-center">
 					<div class="flex-grow border-t border-zinc-200 dark:border-zinc-800"></div>
