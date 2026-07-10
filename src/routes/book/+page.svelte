@@ -4,69 +4,30 @@
 	import { env } from "$env/dynamic/public";
 	import { page } from "$app/state";
 	import Topbar from "$lib/components/Topbar.svelte";
-	import type { Room, Booking } from "$lib/types";
-	import { toast } from "svelte-sonner";
 	import { authenticatePbFromCookie } from "$lib/pocketbase";
 
-	// Import custom components
+	// Import modular components
 	import RoomSelection from "$lib/components/booking/RoomSelection.svelte";
 	import DateTimeSelection from "$lib/components/booking/DateTimeSelection.svelte";
 	import BookingDetailsForm from "$lib/components/booking/BookingDetailsForm.svelte";
 	import QueueAside from "$lib/components/booking/QueueAside.svelte";
 	import BookingSuccessState from "$lib/components/booking/BookingSuccessState.svelte";
-	import BookingConfirmDialog from "$lib/components/BookingConfirmDialog.svelte";
+	import BookingConfirmDialog from "$lib/components/booking/BookingConfirmDialog.svelte";
+
+	// Import Svelte 5 Flow Controller
+	import { BookingFlow } from "$lib/components/booking/BookingFlow.svelte";
 
 	// Import UI components remaining in shell
 	import { Alert, AlertTitle, AlertDescription } from "$lib/components/ui/alert";
 	import { Button } from "$lib/components/ui/button";
 	import { AlertCircle, Loader2, CalendarPlus } from "@lucide/svelte";
 
-	// Import utilities
-	import {
-		getBookingDateInBangkok,
-		isValidRoomId,
-		getTodayDate,
-		formatDisplayTime,
-		checkOverlap,
-		validateForm
-	} from "$lib/utils/booking-helpers";
-
 	const pocketbaseUrl = env.PUBLIC_POCKETBASE_URL || "";
-
-	let rooms = $state<Room[]>([]);
-	let loadingRooms = $state(true);
-
 	const user = $derived(page.data.user);
 	const isAdmin = $derived(user?.isAdmin ?? false);
 
-	// Form fields state
-	let selectedRoomId = $state<string>("");
-	let bookingDate = $state<string>(getTodayDate());
-	let startTime = $state<string>("09:00");
-	let endTime = $state<string>("10:00");
-	let title = $state<string>("");
-	let notes = $state<string>("");
-	let isRecurring = $state(false);
-	let recurringUntil = $state<string>("");
-	let recurringDays = $state<number[]>([]);
-	let customBookerName = $state("");
-	let showConfirm = $state(false);
-
-	const THAI_DAYS = [
-		"อาทิตย์",
-		"จันทร์",
-		"อังคาร",
-		"พุธ",
-		"พฤหัสบดี",
-		"ศุกร์",
-		"เสาร์",
-	];
-	const recurringDaysText = $derived(
-		recurringDays
-			.map((d) => THAI_DAYS[d])
-			.filter(Boolean)
-			.join(", "),
-	);
+	// Instantiate Svelte 5 flow controller
+	const flow = new BookingFlow(() => isAdmin);
 
 	function getDayOfWeek(dateStr: string): number {
 		if (!dateStr) return 1;
@@ -78,224 +39,35 @@
 	}
 
 	$effect(() => {
-		const dateVal = bookingDate;
+		const dateVal = flow.bookingDate;
 		untrack(() => {
 			if (dateVal) {
 				const day = getDayOfWeek(dateVal);
-				if (!recurringDays.includes(day)) {
-					recurringDays = [day];
+				if (!flow.recurringDays.includes(day)) {
+					flow.recurringDays = [day];
 				}
 			}
 		});
 	});
 
-	function toggleDay(day: number) {
-		if (recurringDays.includes(day)) {
-			if (recurringDays.length > 1) {
-				recurringDays = recurringDays.filter((d) => d !== day);
-			} else {
-				toast.error("ต้องเลือกวันจองซ้ำอย่างน้อย 1 วัน");
-			}
-		} else {
-			recurringDays = [...recurringDays, day].sort();
-		}
-	}
-
-	let existingBookings = $state<Booking[]>([]);
-	let loadingBookings = $state(false);
-
-	let submitting = $state(false);
-	let submitError = $state<string | null>(null);
-	let submitSuccess = $state(false);
-	let validationError = $state<string | null>(null);
-
-	let pb: PocketBase | null = null;
-
-	function selectRoom(id: string) {
-		selectedRoomId = id;
-		validationError = null;
-	}
-
-	async function loadRooms() {
-		if (!pb) return;
-		try {
-			const data = await pb
-				.collection("rooms")
-				.getFullList<Room>({ sort: "name" });
-			rooms = data;
-		} catch (err) {
-			console.error("Failed to load rooms", err);
-		} finally {
-			loadingRooms = false;
-		}
-	}
-
-	async function loadBookingsForSelected() {
-		if (!pb || !selectedRoomId || !isValidRoomId(selectedRoomId)) {
-			existingBookings = [];
-			return;
-		}
-		loadingBookings = true;
-		try {
-			const safeId = selectedRoomId;
-			const data = await pb.collection("bookings").getFullList({
-				filter: `field = "${safeId}"`,
-				sort: "start_time",
-			});
-			const allBookings = data as unknown as Booking[];
-
-			existingBookings = allBookings.filter((b) => {
-				if (b.status === "cancelled") return false;
-				return getBookingDateInBangkok(b.start_time) === bookingDate;
-			});
-		} catch (err) {
-			console.error("Failed to load bookings", err);
-			existingBookings = [];
-		} finally {
-			loadingBookings = false;
-		}
-	}
-
+	// re-fetch bookings when room or date changes
 	$effect(() => {
-		const rid = selectedRoomId;
-		const d = bookingDate;
+		const rid = flow.selectedRoomId;
+		const d = flow.bookingDate;
 		untrack(() => {
 			if (rid && d) {
-				void loadBookingsForSelected();
+				void flow.loadBookingsForSelected();
 			}
 		});
 	});
 
-	async function fetchBookingsForRoomDate(): Promise<Booking[]> {
-		if (!pb || !selectedRoomId || !isValidRoomId(selectedRoomId)) {
-			return [];
-		}
-		const safeId = selectedRoomId;
-		const data = await pb.collection("bookings").getFullList({
-			filter: `field = "${safeId}"`,
-			sort: "start_time",
-		});
-		const all = data as unknown as Booking[];
-		return all.filter((b) => {
-			if (b.status === "cancelled") return false;
-			return getBookingDateInBangkok(b.start_time) === bookingDate;
-		});
-	}
-
-	async function handleSubmit(e: Event) {
-		e.preventDefault();
-		validationError = null;
-		submitError = null;
-
-		const err = validateForm({
-			selectedRoomId,
-			bookingDate,
-			startTime,
-			endTime,
-			title,
-			isRecurring,
-			recurringUntil,
-			recurringDays,
-		});
-		if (err) {
-			validationError = err;
-			return;
-		}
-
-		if (!pb || !isValidRoomId(selectedRoomId)) {
-			submitError = "ระบบไม่พร้อมใช้งาน";
-			return;
-		}
-
-		submitting = true;
-		try {
-			const fresh = await fetchBookingsForRoomDate();
-			existingBookings = fresh;
-
-			const conflict = checkOverlap(fresh, bookingDate, startTime, endTime);
-			if (conflict) {
-				const cStart = formatDisplayTime(conflict.start_time);
-				const cEnd = formatDisplayTime(conflict.end_time);
-				validationError = `เวลานี้ชนกับการจอง "${conflict.title}" (${cStart}-${cEnd})`;
-				return;
-			}
-
-			showConfirm = true;
-		} catch (err: any) {
-			console.error("Validation/Overlap check failed", err);
-			submitError = err.message || "เกิดข้อผิดพลาดในการตรวจสอบห้อง";
-			toast.error("ตรวจสอบข้อมูลไม่สำเร็จ", {
-				description: submitError ?? "",
-			});
-		} finally {
-			submitting = false;
-		}
-	}
-
-	async function executeSubmit() {
-		submitting = true;
-		validationError = null;
-		submitError = null;
-		try {
-			const response = await fetch("/api/bookings", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
-					roomId: selectedRoomId,
-					date: bookingDate,
-					startTime,
-					endTime,
-					title: title.trim(),
-					notes: notes.trim(),
-					isRecurring,
-					recurringUntil,
-					recurringDays,
-					customBookerName: customBookerName.trim() || undefined,
-				}),
-			});
-
-			if (!response.ok) {
-				const errorData = await response
-					.json()
-					.catch(() => ({ message: "ส่งคำขอไม่สำเร็จ" }));
-				throw new Error(errorData.message || "เซิร์ฟเวอร์ปฏิเสธการจอง");
-			}
-
-			submitSuccess = true;
-			title = "";
-			notes = "";
-			isRecurring = false;
-			recurringUntil = "";
-			recurringDays = [getDayOfWeek(bookingDate)];
-			customBookerName = "";
-			toast.success("ส่งคำขอจองเรียบร้อย", {
-				description: "รอผู้ดูแลอนุมัติ",
-			});
-
-			showConfirm = false;
-			await loadBookingsForSelected();
-		} catch (err: any) {
-			console.error("Submit failed", err);
-			submitError =
-				err.message || "ส่งคำขอไม่สำเร็จ กรุณาลองใหม่อีกครั้ง";
-			toast.error("ส่งคำขอไม่สำเร็จ", { description: submitError ?? "" });
-			showConfirm = false;
-		} finally {
-			submitting = false;
-		}
-	}
-
-	function getRoomName(id: string): string {
-		return rooms.find((r) => r.id === id)?.name ?? "";
-	}
-
 	onMount(() => {
 		if (pocketbaseUrl) {
-			pb = new PocketBase(pocketbaseUrl);
+			const pb = new PocketBase(pocketbaseUrl);
 			authenticatePbFromCookie(pb);
-			void loadRooms();
+			flow.init(pb);
 		} else {
-			loadingRooms = false;
+			flow.loadingRooms = false;
 		}
 	});
 </script>
@@ -327,46 +99,46 @@
 			</div>
 		</div>
 
-		{#if submitSuccess}
-			<BookingSuccessState onReset={() => (submitSuccess = false)} />
+		{#if flow.submitSuccess}
+			<BookingSuccessState onReset={() => (flow.submitSuccess = false)} />
 		{:else}
 			<form
-				onsubmit={handleSubmit}
+				onsubmit={(e) => flow.handleSubmit(e)}
 				class="grid gap-6 lg:grid-cols-[1.4fr_1fr]"
 			>
 				<!-- LEFT COLUMN: Form Steps -->
 				<div class="flex flex-col gap-6">
 					<!-- 1. Room Selection Step -->
 					<RoomSelection
-						{rooms}
-						{selectedRoomId}
-						{loadingRooms}
-						onSelectRoom={selectRoom}
-						{getRoomName}
+						rooms={flow.rooms}
+						selectedRoomId={flow.selectedRoomId}
+						loadingRooms={flow.loadingRooms}
+						onSelectRoom={(id) => flow.selectRoom(id)}
+						getRoomName={(id) => flow.getRoomName(id)}
 					/>
 
 					<!-- 2. Date & Time Step -->
 					<DateTimeSelection
-						bind:bookingDate
-						bind:startTime
-						bind:endTime
-						bind:isRecurring
-						bind:recurringUntil
-						bind:recurringDays
+						bind:bookingDate={flow.bookingDate}
+						bind:startTime={flow.startTime}
+						bind:endTime={flow.endTime}
+						bind:isRecurring={flow.isRecurring}
+						bind:recurringUntil={flow.recurringUntil}
+						bind:recurringDays={flow.recurringDays}
 						{isAdmin}
-						onToggleDay={toggleDay}
+						onToggleDay={(day) => flow.toggleDay(day)}
 					/>
 
 					<!-- 3. Details Step -->
 					<BookingDetailsForm
-						bind:title
-						bind:notes
-						bind:customBookerName
+						bind:title={flow.title}
+						bind:notes={flow.notes}
+						bind:customBookerName={flow.customBookerName}
 						{isAdmin}
 					/>
 
 					<!-- Notifications & Validation alerts -->
-					{#if validationError}
+					{#if flow.validationError}
 						<Alert
 							variant="destructive"
 							class="border-red-200 bg-red-50 text-red-700 dark:bg-red-950/20 dark:border-red-900/30 dark:text-red-400 rounded-lg"
@@ -376,12 +148,12 @@
 								>ระบุข้อมูลไม่ครบถ้วน</AlertTitle
 							>
 							<AlertDescription class="text-xs mt-0.5"
-								>{validationError}</AlertDescription
+								>{flow.validationError}</AlertDescription
 							>
 						</Alert>
 					{/if}
 
-					{#if submitError}
+					{#if flow.submitError}
 						<Alert
 							variant="destructive"
 							class="border-red-200 bg-red-50 text-red-700 dark:bg-red-950/20 dark:border-red-900/30 dark:text-red-400 rounded-lg"
@@ -391,17 +163,17 @@
 								>การส่งคำขอจองล้มเหลว</AlertTitle
 							>
 							<AlertDescription class="text-xs mt-0.5"
-								>{submitError}</AlertDescription
+								>{flow.submitError}</AlertDescription
 							>
 						</Alert>
 					{/if}
 
 					<Button
 						type="submit"
-						disabled={submitting}
+						disabled={flow.submitting}
 						class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3.5 rounded-lg shadow-xs transition-colors duration-200 cursor-pointer"
 					>
-						{#if submitting}
+						{#if flow.submitting}
 							<Loader2 class="h-4 w-4 animate-spin mr-2" />
 							กำลังส่งคำขอจองห้อง...
 						{:else}
@@ -413,29 +185,29 @@
 
 				<!-- RIGHT COLUMN: Interactive Queue -->
 				<QueueAside
-					{selectedRoomId}
-					{bookingDate}
-					{loadingBookings}
-					{existingBookings}
+					selectedRoomId={flow.selectedRoomId}
+					bookingDate={flow.bookingDate}
+					loadingBookings={flow.loadingBookings}
+					existingBookings={flow.existingBookings}
 				/>
 			</form>
 		{/if}
 	</div>
 
 	<BookingConfirmDialog
-		bind:open={showConfirm}
-		roomName={getRoomName(selectedRoomId)}
-		date={bookingDate}
-		{startTime}
-		{endTime}
-		{title}
-		{notes}
-		{isRecurring}
-		{recurringUntil}
-		{recurringDaysText}
-		{customBookerName}
-		{submitting}
-		onConfirm={executeSubmit}
-		onClose={() => (showConfirm = false)}
+		bind:open={flow.showConfirm}
+		roomName={flow.getRoomName(flow.selectedRoomId)}
+		date={flow.bookingDate}
+		startTime={flow.startTime}
+		endTime={flow.endTime}
+		title={flow.title}
+		notes={flow.notes}
+		isRecurring={flow.isRecurring}
+		recurringUntil={flow.recurringUntil}
+		recurringDaysText={flow.recurringDaysText}
+		customBookerName={flow.customBookerName}
+		submitting={flow.submitting}
+		onConfirm={() => flow.executeSubmit()}
+		onClose={() => (flow.showConfirm = false)}
 	/>
 </div>

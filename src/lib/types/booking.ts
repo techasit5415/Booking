@@ -25,3 +25,14 @@ export interface BookingItem {
 	bookerEmail?: string;
 	booker_email?: string;
 }
+
+export type BookingRecord = Record<string, unknown> & {
+	expand?: {
+		field?: {
+			name?: unknown;
+		};
+	};
+};
+
+export type BookingViewState = 'active' | 'idle';
+
