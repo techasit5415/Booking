@@ -494,7 +494,7 @@
 												"rounded-lg border p-4 text-left transition-colors duration-200 flex flex-col justify-between h-24",
 												selectedRoomId === room.id
 													? "border-indigo-600 bg-indigo-50/30 dark:bg-indigo-950/20"
-													: "border-zinc-200 dark:border-zinc-800 bg-card hover:bg-slate-50 dark:hover:bg-zinc-800",
+													: "border-zinc-200 dark:border-zinc-800 bg-card hover:bg-slate-50 dark:hover:bg-zinc-850",
 											)}
 										>
 											<div>
@@ -785,7 +785,7 @@
 																	d.val,
 																)
 																	? "bg-indigo-600 border-indigo-600 text-white shadow-sm shadow-indigo-500/20"
-																	: "bg-background border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-slate-50 dark:hover:bg-zinc-800",
+																	: "bg-background border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-slate-50 dark:hover:bg-zinc-850",
 															)}
 															title={d.name}
 														>
@@ -887,7 +887,27 @@
 							</div>
 						</Card.Content>
 					</Card.Root>
+					<div class="flex flex-col gap-4">
+						<Card.Root class="p-4">
+							<p class="font-semibold mb-1">
+								1.
+								ขอให้ตรวจสอบข้อมูลรายละเอียดการจองให้เรียบร้อยก่อนกดยืนยัน
+							</p>
+						</Card.Root>
 
+						<Card.Root class="p-4">
+							<p class="font-semibold mb-1">
+								2. กรณีขออนุญาตใช้ห้องปฏิบัติการนอกเวลาราชการ
+							</p>
+							<p class="text-muted-foreground text-sm pl-4">
+								หากวัสดุ อุปกรณ์
+								ครุภัณฑ์ที่อยู่ภายในห้องปฏิบัติการ เกิดการชำรุด
+								เสียหาย หรือสูญหาย
+								ให้นักศึกษาและอาจารย์ผู้ขออนุญาตเป็นผู้รับผิดชอบ
+								ชดใช้ค่าเสียหายทั้งหมด
+							</p>
+						</Card.Root>
+					</div>
 					<!-- Notifications & Validation alerts -->
 					{#if validationError}
 						<Alert
@@ -1014,7 +1034,7 @@
 											></div>
 
 											<div
-												class="bg-zinc-50/60 dark:bg-zinc-800 border border-zinc-100 dark:border-zinc-800/80 rounded-lg px-4 py-3"
+												class="bg-zinc-50/60 dark:bg-zinc-850 border border-zinc-100 dark:border-zinc-800/80 rounded-lg px-4 py-3"
 											>
 												<div
 													class="flex items-center justify-between gap-2 mb-1"
@@ -1046,7 +1066,7 @@
 												</div>
 
 												<h4
-													class="text-xs font-bold text-foreground line-clamp-1"
+													class="text-xs font-bold text-zinc-850 dark:text-zinc-200 line-clamp-1"
 												>
 													{b.title}
 												</h4>

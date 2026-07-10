@@ -360,9 +360,7 @@
 				>
 					Room Schedule · {displayMonthName}
 				</div>
-				<h1
-					class="text-2xl font-bold tracking-tight text-foreground"
-				>
+				<h1 class="text-2xl font-bold tracking-tight text-foreground">
 					{currentRoomName}
 				</h1>
 				<p class="text-foreground/60 text-sm">
@@ -397,7 +395,7 @@
 					>
 						เลือกห้อง:
 					</label>
- 
+
 					<Select.Root
 						bind:value={selectedRoomId}
 						onValueChange={handleRoomChange}
