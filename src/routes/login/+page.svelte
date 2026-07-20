@@ -11,36 +11,11 @@
 
 	const errorMessage = $derived(errorParam || oauthError);
 
-	async function signInWithOidc() {
+	function signInWithOidc() {
 		oauthLoading = true;
 		oauthError = null;
-		try {
-			const pb = new PocketBase(env.PUBLIC_POCKETBASE_URL || '/api/db');
-			pb.autoCancellation(false);
-			
-			// Triggers the client-side OAuth2 flow managed by PocketBase
-			const result = await pb.collection('users').authWithOAuth2({ provider: 'oidc' });
-
-			const res = await fetch('/auth/callback', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					token: result.token,
-					record: result.record,
-					meta: result.meta,
-				}),
-			});
-			if (!res.ok) throw new Error('ไม่สามารถบันทึกเซสชันได้');
-
-			// Redirect to the dynamic redirect page or fallback to /book
-			const next = page.url.searchParams.get('redirect') || '/book';
-			window.location.assign(next);
-		} catch (e: any) {
-			console.error(e);
-			oauthError = e.message || 'เข้าสู่ระบบผ่าน OIDC ล้มเหลว กรุณาลองใหม่อีกครั้ง';
-		} finally {
-			oauthLoading = false;
-		}
+		const next = page.url.searchParams.get('redirect') || '/book';
+		window.location.assign(`/auth/login?redirect=${encodeURIComponent(next)}`);
 	}
 </script>
 
