@@ -1,8 +1,8 @@
 
-import { PUBLIC_POCKETBASE_URL} from '$env/static/public';
+import { env } from '$env/dynamic/public';
 import PocketBase from 'pocketbase';
 
-export const pb = new PocketBase(PUBLIC_POCKETBASE_URL);
+export const pb = new PocketBase(env.PUBLIC_POCKETBASE_URL);
 
 /**
  * อ่าน pb_auth cookie (ที่ตั้งตอน /auth/callback) แล้วยัด token+model ลง PocketBase client
