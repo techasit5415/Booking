@@ -13,12 +13,13 @@
  */
 
 import { redirect, error } from '@sveltejs/kit';
+import { dev } from '$app/environment';
 import type { RequestHandler } from './$types';
 import crypto from 'node:crypto';
 import { PUBLIC_KMITL_CLIENT_ID, PUBLIC_IAM_REDIRECT_URI } from '$env/static/public';
 
 const IAM_AUTH_URL = 'https://portal.science.kmitl.ac.th/o/oauth2/auth';
-const SCOPE = 'read:userinfo';
+const SCOPE = 'read:userinfo,read:profile';
 
 const IAM_STATE_COOKIE = 'iam_oauth_state';
 const IAM_NEXT_COOKIE = 'iam_oauth_next';
@@ -38,7 +39,7 @@ function tempCookieOptions() {
         path: '/',
         httpOnly: true,
         sameSite: 'lax' as const,
-        secure: false, // dev: HTTP localhost
+        secure: !dev,
         maxAge: 300,
     };
 }

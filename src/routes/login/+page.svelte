@@ -7,13 +7,9 @@
 	const errorMessage = page.url.searchParams.get('error');
 
 	function redirectToKmitl() {
-		const url = new URL('https://portal.science.kmitl.ac.th/o/oauth2/auth');
-		url.searchParams.set('client_id', PUBLIC_KMITL_CLIENT_ID);
-		url.searchParams.set('redirect_uri', PUBLIC_KMITL_REDIRECT_URI);
-		url.searchParams.set('response_type', 'code');
-		url.searchParams.set('scope', 'read:userinfo,read:profile');
-		url.searchParams.set('state', 'any-random-string-123');
-		window.location.href = url.toString();
+		const next = page.url.searchParams.get('redirect');
+		const url = next ? `/auth/iam-login?next=${encodeURIComponent(next)}` : '/auth/iam-login';
+		window.location.href = url;
 	}
 </script>
 

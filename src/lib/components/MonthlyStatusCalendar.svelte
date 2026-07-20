@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { page } from "$app/state";
 	import * as Card from "$lib/components/ui/card";
 	import { Badge } from "$lib/components/ui/badge";
 	import { cn } from "$lib/utils";
@@ -29,6 +30,7 @@
 	}
 
 	let { calendarDays = [], isAdmin = false }: Props = $props();
+	const user = $derived(page.data.user);
 
 	const daysOfWeek = ["อา.", "จ.", "อ.", "พ.", "พฤ.", "ศ.", "ส."];
 
@@ -355,7 +357,7 @@
 				class="px-6 py-4 border-t border-border/85 bg-muted/50 flex items-center justify-between"
 			>
 				<div>
-					{#if isAdmin}
+					{#if isAdmin || (user && selectedBooking.bookerEmail === user.email)}
 						<button
 							type="button"
 							onclick={handleDeleteBooking}
