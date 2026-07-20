@@ -37,8 +37,8 @@ function decodeJwtPayload(token: string): { id?: string; exp?: number; [k: strin
 }
 
 const PB_URL = env.POCKETBASE_URL ?? env.PUBLIC_POCKETBASE_URL ?? '';
-const PB_ADMIN_EMAIL = env.USER_ADMIN ?? '';
-const PB_ADMIN_PASSWORD = env.USER_ADMIN_PASSWORD ?? '';
+const PB_ADMIN_EMAIL = env.PB_ADMIN_EMAIL ?? '';
+const PB_ADMIN_PASSWORD = env.PB_ADMIN_PASSWORD ?? '';
 
 // cache 1 นาที กันยิง PB ซ้ำ
 const userCache = new Map<string, { user: AuthUser; expires: number }>();
@@ -60,7 +60,7 @@ async function getAdminPb(): Promise<PocketBase | null> {
     adminPb = new PocketBase(PB_URL);
     adminPb.autoCancellation(false);
     try {
-        await adminPb.collection('_superusers').authWithPassword(PB_ADMIN_EMAIL, PB_ADMIN_PASSWORD);
+        await adminPb.admins.authWithPassword(PB_ADMIN_EMAIL, PB_ADMIN_PASSWORD);
         adminAuthTime = Date.now();
         return adminPb;
     } catch (err) {
@@ -91,21 +91,24 @@ async function fetchFreshUserFromPb(email: string): Promise<AuthUser | null> {
             user_type: fresh.user_type ?? '',
         };
     } catch (err) {
-        // ลองค้นหาใน collection _superusers เผื่อเป็นผู้ดูแลระบบหลัก (PocketBase Superuser)
+        // ลองค้นหาใน admins เผื่อเป็นผู้ดูแลระบบหลัก (PocketBase legacy Admin)
         try {
             const safe = email.replace(/"/g, '\\"');
-            const superuser = await pb.collection('_superusers').getFirstListItem(`email = "${safe}"`);
-            if (superuser?.id && superuser?.email) {
+            const adminList = await pb.admins.getList(1, 1, {
+                filter: `email = "${safe}"`
+            });
+            const admin = adminList.items[0];
+            if (admin?.id && admin?.email) {
                 return {
-                    id: superuser.id,
-                    email: superuser.email,
+                    id: admin.id,
+                    email: admin.email,
                     name: 'Administrator',
                     username: 'admin',
                     user_type: '000000000000009',
                 };
             }
         } catch {
-            // ละเว้นหากค้นหาใน _superusers ไม่พบเช่นกัน
+            // ละเว้นหากค้นหาใน admins ไม่พบเช่นกัน
         }
 
         console.warn('[auth] PB re-fetch by email failed:', err instanceof Error ? err.message : err);

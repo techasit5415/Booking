@@ -4,9 +4,9 @@ import PocketBase from 'pocketbase';
 import { env } from '$env/dynamic/private';
 
 const PB_URL = env.POCKETBASE_URL ?? env.PUBLIC_POCKETBASE_URL ?? '';
-// ✅ เปลี่ยนมาดึงรหัสผ่านแอดมินตรงเพื่อไขระบบ Superuser ตัวใหม่แทนเหรียญ Token ดิบ
-const USER_ADMIN = env.USER_ADMIN || '';
-const USER_ADMIN_PASSWORD = env.USER_ADMIN_PASSWORD || '';
+// ✅ เปลี่ยนมาดึงรหัสผ่านแอดมินตรงเพื่อไขระบบ Admin ตัวเก่าแทนเหรียญ Token ดิบ
+const PB_ADMIN_EMAIL = env.PB_ADMIN_EMAIL || '';
+const PB_ADMIN_PASSWORD = env.PB_ADMIN_PASSWORD || '';
 
 // === Validation helpers ===
 const SAFE_ID = /^[a-zA-Z0-9_-]{1,64}$/;
@@ -115,7 +115,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
     const data = result.data;
 
     // ตรวจสอบสิทธิ์ Superadmin
-    const isAdmin = locals.user.user_type === '000000000000009' || locals.user.email === USER_ADMIN;
+    const isAdmin = locals.user.user_type === '000000000000009' || locals.user.email === PB_ADMIN_EMAIL;
     if (data.isRecurring && !isAdmin) {
         throw error(403, 'คุณไม่มีสิทธิ์ทำรายการจองซ้ำรายสัปดาห์');
     }
@@ -125,8 +125,8 @@ export const POST: RequestHandler = async ({ request, locals }) => {
     pb.autoCancellation(false);
 
     try {
-        // ✅ ยืนยันตัวตนแอดมินผ่านตาราง _superusers เพื่อ bypass กฎการเขียน 'Admin only' ของ PocketBase
-        await pb.collection('_superusers').authWithPassword(USER_ADMIN, USER_ADMIN_PASSWORD);
+        // ✅ ยืนยันตัวตนแอดมินผ่าน admins เพื่อ bypass กฎการเขียน 'Admin only' ของ PocketBase
+        await pb.admins.authWithPassword(PB_ADMIN_EMAIL, PB_ADMIN_PASSWORD);
     } catch (adminErr) {
         console.error('❌ พังตรงล็อกอินแอดมินที่ Endpoint:', adminErr);
         throw error(500, 'ระบบภายในไม่สามารถเปิดสิทธิ์ผู้ดูแลเพื่อเขียนจองได้');

@@ -4,8 +4,8 @@ import PocketBase from 'pocketbase';
 import { env } from '$env/dynamic/private';
 
 const PB_URL = env.POCKETBASE_URL ?? env.PUBLIC_POCKETBASE_URL ?? '';
-const USER_ADMIN = env.USER_ADMIN || '';
-const USER_ADMIN_PASSWORD = env.USER_ADMIN_PASSWORD || '';
+const PB_ADMIN_EMAIL = env.PB_ADMIN_EMAIL || '';
+const PB_ADMIN_PASSWORD = env.PB_ADMIN_PASSWORD || '';
 
 export const PATCH: RequestHandler = async ({ params, request, locals }) => {
     if (!locals.user) throw error(401, 'กรุณาเข้าสู่ระบบก่อนทำการแก้ไข');
@@ -20,13 +20,13 @@ export const PATCH: RequestHandler = async ({ params, request, locals }) => {
     pb.autoCancellation(false);
 
     try {
-        await pb.collection('_superusers').authWithPassword(USER_ADMIN, USER_ADMIN_PASSWORD);
+        await pb.admins.authWithPassword(PB_ADMIN_EMAIL, PB_ADMIN_PASSWORD);
         
         // 1. Fetch current booking details
         const booking = await pb.collection('bookings').getOne(bookingId);
         
         // 2. Validate permissions: must be superadmin or the original booker
-        const isAdmin = locals.user.user_type === '000000000000009' || locals.user.email === USER_ADMIN;
+        const isAdmin = locals.user.user_type === '000000000000009' || locals.user.email === PB_ADMIN_EMAIL;
         const isOwner = booking.booker_id === locals.user.id || booking.bookerEmail === locals.user.email;
         if (!isAdmin && !isOwner) {
             throw error(403, 'ไม่มีสิทธิ์แก้ไขรายการจองนี้');
@@ -62,13 +62,13 @@ export const DELETE: RequestHandler = async ({ params, locals }) => {
     pb.autoCancellation(false);
 
     try {
-        await pb.collection('_superusers').authWithPassword(USER_ADMIN, USER_ADMIN_PASSWORD);
+        await pb.admins.authWithPassword(PB_ADMIN_EMAIL, PB_ADMIN_PASSWORD);
         
         // 1. Fetch booking details
         const booking = await pb.collection('bookings').getOne(bookingId);
         
         // 2. Validate permissions: must be superadmin or the original booker
-        const isAdmin = locals.user.user_type === '000000000000009' || locals.user.email === USER_ADMIN;
+        const isAdmin = locals.user.user_type === '000000000000009' || locals.user.email === PB_ADMIN_EMAIL;
         const isOwner = booking.booker_id === locals.user.id || booking.bookerEmail === locals.user.email;
         if (!isAdmin && !isOwner) {
             throw error(403, 'ไม่มีสิทธิ์ยกเลิกรายการจองนี้');

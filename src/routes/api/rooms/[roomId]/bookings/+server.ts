@@ -4,8 +4,8 @@ import PocketBase from 'pocketbase';
 import { env } from '$env/dynamic/private';
 
 const PB_URL = env.POCKETBASE_URL ?? env.PUBLIC_POCKETBASE_URL ?? '';
-const USER_ADMIN = env.USER_ADMIN || '';
-const USER_ADMIN_PASSWORD = env.USER_ADMIN_PASSWORD || '';
+const PB_ADMIN_EMAIL = env.PB_ADMIN_EMAIL || '';
+const PB_ADMIN_PASSWORD = env.PB_ADMIN_PASSWORD || '';
 
 const SAFE_ID = /^[a-zA-Z0-9_-]{1,64}$/;
 
@@ -39,7 +39,7 @@ export const GET: RequestHandler = async ({ params, url }) => {
     }
     const safeRoomId = escapeFilterValue(roomId);
 
-    if (!PB_URL || !USER_ADMIN || !USER_ADMIN_PASSWORD) {
+    if (!PB_URL || !PB_ADMIN_EMAIL || !PB_ADMIN_PASSWORD) {
         throw error(500, 'Server configuration error');
     }
 
@@ -50,7 +50,7 @@ export const GET: RequestHandler = async ({ params, url }) => {
     pb.autoCancellation(false);
 
     try {
-        await pb.collection('_superusers').authWithPassword(USER_ADMIN, USER_ADMIN_PASSWORD);
+        await pb.admins.authWithPassword(PB_ADMIN_EMAIL, PB_ADMIN_PASSWORD);
 
         // ✅ ไม่ apply time filter อัตโนมัติ — ให้ client filter เองตาม use case
         //   - room page: ต้องการ "วันนี้" ทั้งหมด (รวมที่จบแล้ว เพื่อโชว์ context)
