@@ -1,57 +1,51 @@
-import { redirect } from '@sveltejs/kit';
-import { dev } from '$app/environment';
+import { json, redirect } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { loginWithKmitlCode } from '$lib/pocketbase.server';
+import PocketBase from 'pocketbase';
+import { env } from '$env/dynamic/private';
+import { dev } from '$app/environment';
 
-export const GET: RequestHandler = async ({ url, cookies }) => {
-    const code = url.searchParams.get('code');
-    const state = url.searchParams.get('state');
-    const expectedState = cookies.get('iam_oauth_state');
+const DEFAULT_USER_TYPE_ID = '000000000000001';
 
-    if (!state || state !== expectedState) {
-        throw redirect(302, '/login?error=' + encodeURIComponent('การยืนยันรหัสความปลอดภัย (State) ล้มเหลว กรุณาลองใหม่อีกครั้ง'));
+export const POST: RequestHandler = async ({ request, cookies }) => {
+    const payload = await request.json().catch(() => null);
+    if (!payload?.token || !payload?.record?.id) {
+        return json({ ok: false, error: 'invalid payload' }, { status: 400 });
     }
 
-    // Clear state cookie immediately after verification
-    cookies.delete('iam_oauth_state', { path: '/' });
+    let record = payload.record;
 
-    if (!code) {
-        // KMITL redirect กลับมาโดยไม่มี code → redirect กลับ login พร้อม error
-        throw redirect(302, '/login?error=' + encodeURIComponent('ไม่ได้รับรหัสยืนยันตัวตนจาก KMITL กรุณาลองใหม่'));
+    // Auto-assign the default user_type on first-time OAuth login
+    if (!record.user_type && env.USER_ADMIN && env.USER_ADMIN_PASSWORD) {
+        try {
+            const pbAdmin = new PocketBase(env.POCKETBASE_URL ?? env.PUBLIC_POCKETBASE_URL ?? 'http://192.168.15.14:8080');
+            pbAdmin.autoCancellation(false);
+            await pbAdmin.collection('_superusers').authWithPassword(env.USER_ADMIN, env.USER_ADMIN_PASSWORD);
+
+            console.log(`[auth/callback] Assigning default user_type for new user: ${record.id}`);
+            const updated = await pbAdmin.collection('users').update(record.id, {
+                user_type: DEFAULT_USER_TYPE_ID
+            });
+            record = updated;
+        } catch (e) {
+            console.error('[auth/callback] Failed to set default user_type:', e);
+        }
     }
 
-    let next = '/book';
-    try {
-        const authData = await loginWithKmitlCode(code);
+    const cookiePayload = {
+        token: payload.token,
+        model: record,
+    };
 
-        // Get the dynamic redirect path and clean up
-        next = cookies.get('iam_oauth_next') || '/book';
-        cookies.delete('iam_oauth_next', { path: '/' });
+    cookies.set('pb_auth', JSON.stringify(cookiePayload), {
+        path: '/',
+        secure: !dev,
+        httpOnly: false,
+        maxAge: 60 * 60 * 24 * 7
+    });
 
-        // เก็บใน cookie แค่ token + model — hooks.server.ts เอา token ไป verify กับ PB
-        // แล้วดึง user record ของจริง (ไม่เชื่อ model ใน cookie เพราะแก้ได้)
-        const cookiePayload = {
-            token: authData.token,
-            model: authData.model,
-        };
+    return json({ ok: true });
+};
 
-        // เซ็ตคุกกี้ชื่อ 'pb_auth' ส่งกลับไปที่เบราว์เซอร์
-        // - secure: ใช้ !dev เพื่อให้ localhost dev ใช้ http ได้ แต่ prod บังคับ https
-        cookies.set('pb_auth', JSON.stringify(cookiePayload), {
-            path: '/',
-            secure: !dev,
-            httpOnly: false,
-            maxAge: 60 * 60 * 24 * 7
-        });
-    } catch (error) {
-        console.error('OAuth Handling Error:', error);
-        // Clean up next cookie in case of error
-        cookies.delete('iam_oauth_next', { path: '/' });
-        // login fail → redirect กลับ login พร้อม error message แทนการ return JSON ดิบ
-        const message = error instanceof Error ? error.message : 'ล็อกอินไม่สำเร็จ';
-        throw redirect(302, '/login?error=' + encodeURIComponent(message));
-    }
-
-    throw redirect(302, next);
-    
+export const GET: RequestHandler = async () => {
+    throw redirect(303, '/');
 };

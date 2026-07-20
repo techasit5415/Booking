@@ -1,15 +1,46 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import { PUBLIC_KMITL_CLIENT_ID, PUBLIC_KMITL_REDIRECT_URI } from '$env/static/public';
-	import { AlertCircle, LogIn, CalendarRange, LayoutDashboard } from '@lucide/svelte';
+	import { env } from '$env/dynamic/public';
+	import PocketBase from 'pocketbase';
+	import { AlertCircle, LogIn, CalendarRange, LayoutDashboard, Loader2 } from '@lucide/svelte';
 	import { fade } from 'svelte/transition';
 
-	const errorMessage = page.url.searchParams.get('error');
+	const errorParam = page.url.searchParams.get('error');
+	let oauthLoading = $state(false);
+	let oauthError = $state<string | null>(null);
 
-	function redirectToKmitl() {
-		const next = page.url.searchParams.get('redirect');
-		const url = next ? `/auth/iam-login?next=${encodeURIComponent(next)}` : '/auth/iam-login';
-		window.location.href = url;
+	const errorMessage = $derived(errorParam || oauthError);
+
+	async function signInWithOidc() {
+		oauthLoading = true;
+		oauthError = null;
+		try {
+			const pb = new PocketBase(env.PUBLIC_POCKETBASE_URL || '/api/db');
+			pb.autoCancellation(false);
+			
+			// Triggers the client-side OAuth2 flow managed by PocketBase
+			const result = await pb.collection('users').authWithOAuth2({ provider: 'oidc' });
+
+			const res = await fetch('/auth/callback', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					token: result.token,
+					record: result.record,
+					meta: result.meta,
+				}),
+			});
+			if (!res.ok) throw new Error('ไม่สามารถบันทึกเซสชันได้');
+
+			// Redirect to the dynamic redirect page or fallback to /book
+			const next = page.url.searchParams.get('redirect') || '/book';
+			window.location.assign(next);
+		} catch (e: any) {
+			console.error(e);
+			oauthError = e.message || 'เข้าสู่ระบบผ่าน OIDC ล้มเหลว กรุณาลองใหม่อีกครั้ง';
+		} finally {
+			oauthLoading = false;
+		}
 	}
 </script>
 
@@ -63,11 +94,17 @@
 			<!-- Actions -->
 			<div class="mt-8 space-y-4">
 				<button
-					onclick={redirectToKmitl}
-					class="flex w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white py-3 text-sm font-semibold transition-colors duration-200 shadow-sm cursor-pointer"
+					onclick={signInWithOidc}
+					disabled={oauthLoading}
+					class="flex w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white py-3 text-sm font-semibold transition-colors duration-200 shadow-sm cursor-pointer"
 				>
-					<LogIn class="h-4 w-4" />
-					ลงชื่อเข้าใช้งานด้วย KMITL Account
+					{#if oauthLoading}
+						<Loader2 class="h-4 w-4 animate-spin" />
+						กำลังเชื่อมต่อ...
+					{:else}
+						<LogIn class="h-4 w-4" />
+						ลงชื่อเข้าใช้งานด้วย KMITL Account
+					{/if}
 				</button>
 
 				<a
